@@ -81,8 +81,7 @@ def fill_result_line_in_excel(worksheet, row, student):
         = "=sum(" + get_column_letter(4) + str(row) + ":" + get_column_letter(4 + len(student.scores.items())) + str(
         row) + ")"
     col = 4
-    # print("à vérifier : ", student.to_check)
-    # print("sytles : ", student.scores["styles"], "et liens : ", student.scores["lien"])
+
     # TODO add conditional formatting : https://openpyxl.readthedocs.io/en/latest/formatting.html
     # Todo add formulas : https://openpyxl.readthedocs.io/en/latest/usage.html?highlight=formula#using-formulae
     for key, value in student.scores.items():
@@ -186,11 +185,11 @@ def verifier_moins_de_3_mo(filename, max_size, max_points):
 
 
 def verifier_nombre_pages_pdf(pdf, min_pages, max_pages, student):
-    """ input : f = fichier pdf existant,
+    """ Input : f = fichier pdf existant,
     # min = nombre de page minimum (>=0),
     # max = nombre de pages max (>=0),
     # pts = nombre de points à attribuer
-    # output : pts si le nombre de page de f est compris dans l'intervale [min, max], 0 sinon
+    # output : pts si le nombre de pages de f est compris dans l'intervale [min, max], 0 sinon
     # Obtenez les informations du document"""
     # info = pdf.metadata
     key = "pages"
@@ -223,7 +222,7 @@ def check_sections_word(doc, student, key="section"):
 
 
 def lister_styles_word(doc):
-    listeTitres = []
+    liste_titres = []
     #     for parag in doc.paragraphs:
     #         if ("Heading" in parag.style.name) or ("Titre" in parag.style.name):
     #             #print("oui")
@@ -235,12 +234,11 @@ def lister_styles_word(doc):
         # Si le nom du style correspond à un style de titre, imprimez le contenu du paragraphe
         styles.add(style_name)
         if style_name in ('Titre 1', 'Titre 2', 'Titre 3', 'Heading 1', 'Heading 2', 'Heading 3'):
-            listeTitres.append(paragraph)
-    #print(styles)
-    return listeTitres
+            liste_titres.append(paragraph)
+    return liste_titres
 
 
-def verifier_styles_word(doc, student, key = "styles"):
+def verifier_styles_word(doc, student, key="styles"):
     pts = 0
     raison = ""
 
@@ -268,7 +266,7 @@ def verifier_styles_word(doc, student, key = "styles"):
     student.reasons[key] = raison
 
 
-def check_page_number_Word(doc, total_pages):
+def check_page_number_word(doc, total_pages):
     print("Nombre total de pages (Word) : ", total_pages)
     # Récupérer les pieds de page
     footer_text = doc.Sections.Item(1).Footers.Item(1).Range.Text
@@ -293,9 +291,8 @@ def check_page_number_Word(doc, total_pages):
 # en bas à gauche votre nom,
 # en bas à droite le numéro de page et le nombre de pages,
 # en bas et au centre « Examen TICE — B1 » ;
-def verifier_entetes_pieds_de_page_word(document, student, total_pages, key = "piedDePage"):
+def verifier_entetes_pieds_de_page_word(document, student, total_pages, key="piedDePage"):
     # document : pydocx
-    #TODO : GROSSES ERREURS dans les points : > au max
     # TODO : vérifier avec champs, parce que Sophie Hodzic a mis un numéro de page, mais sans le texte...
     # TODO : vérifier avec champs, parce que Almina Ajdarpasic a mis le nombre total de page à la main
 
@@ -303,7 +300,7 @@ def verifier_entetes_pieds_de_page_word(document, student, total_pages, key = "p
     max_points = student.max_points[key]
     raison = ""
     to_check_manually = "pied de page : Nombre total pages ; alignement GMD + en-tête : en haut à droite"
-    group = "unknown"
+    # group = "unknown"
     points = 0
     # for sec in document.sections:
     #    print(sec)
@@ -372,69 +369,71 @@ def verifier_entetes_pieds_de_page_word(document, student, total_pages, key = "p
 
 
 # espaces / sauts de page :
-#   max 2 enter, max 2 espaces d'affilée, bonus pour style de page/saut de section
-def verifier_nombre_enter_et_espaces_word(doc, student, max_return=3, max_spaces=2, key ="espaces"):  #
+#   max 2 return, max 2 espaces d'affilée, bonus pour style de page/saut de section
+def verifier_nombre_enter_et_espaces_word(doc, student, max_return=3, max_spaces=2, key="espaces"):  #
     # doc == pydocx
     points = student.max_points[key]
-    previous_empty = False
-    espacesTrouves = False
-    raison_enter = ""
-    raison_spaces = ""
+    # previous_empty = False
+    spaces_found = False
+    return_reason = ""
+    spaces_reasons = ""
 
     paragraphs = doc.paragraphs
     consecutiveemptyparagraphscount = 0
 
     for p in paragraphs:
-        content=p.text
+        content = p.text
         content.replace(" ", "")
         content.replace("\t", "")
         if len(content) <= 1:
             consecutiveemptyparagraphscount += 1
             if consecutiveemptyparagraphscount > max_return:
-                #more than max_enter return founds
+                # more than max_enter return founds
                 break
         else:
             consecutiveemptyparagraphscount = 0
 
     if consecutiveemptyparagraphscount > max_return:
         points -= student.max_points[key] / 2
-        raison_enter = "Il y a plusieurs retours à la ligne consécutifs dans le document. "
+        return_reason = "Il y a plusieurs retours à la ligne consécutifs dans le document. "
 
     for paragraph in doc.paragraphs:
-        too_many_spaces=" "*max_spaces
+        too_many_spaces = " "*max_spaces
         if too_many_spaces in paragraph.text:
-            ##print("plusieurs espaces")
-            if not espacesTrouves:
+            # print("plusieurs espaces")
+            if not spaces_found:
                 points -= student.max_points[key] / 2
-                espacesTrouves = True
-                raison_spaces = "Il y a plusieurs espaces consécutives dans le document. "
+                spaces_found = True
+                spaces_reasons = "Il y a plusieurs espaces consécutives dans le document. "
     if points <= 0:
         student.scores[key] = 0
-        student.reasons[key] = raison_spaces + raison_enter
+        student.reasons[key] = spaces_reasons + return_reason
         # TODO : créer une classe "fichier word" (objet + méthodes ?)
     else:
         student.scores[key] = points
         if points < student.max_points[key]:
-            student.reasons[key] = raison_spaces + raison_enter
+            student.reasons[key] = spaces_reasons + return_reason
 
 
 def check_page_returns_word(document, student, key):
     # document : win32com
-    range = document.Content
-    range.Find.ClearFormatting()
-    range.Find.Replacement.ClearFormatting()
-    range.Find.Text = ""
-    range.Find.Format = False
-    range.Find.Forward = True
-    range.Find.Wrap = 1
-    range.Find.Execute(FindText=chr(12))
+    content = document.Content
+    content.Find.ClearFormatting()
+    content.Find.Replacement.ClearFormatting()
+    content.Find.Text = ""
+    content.Find.Format = False
+    content.Find.Forward = True
+    content.Find.Wrap = 1
+    content.Find.Execute(FindText=chr(12))
 
-    if range.Find.Found:
+    if content.Find.Found:
         if student.scores[key] < 3:
             student.scores[key] += 1
             student.reasons[key] += "Il y a des sauts de page"
 
 # listes et sous-listes : /2
+
+
 def verifier_listes_word(document, student, key):
     listes = False
     sous_listes = False
@@ -462,7 +461,7 @@ def verifier_listes_word(document, student, key):
 
 # citation avec guillemets : /2 TODO ??
 # note de bas de page avec sources : / 2 TODO
-def check_has_footnotes_word(doc, student, key = "noteBasPage"):
+def check_has_footnotes_word(doc, student, key="noteBasPage"):
     footnotes = doc.Footnotes
     if footnotes.Count > 0:
         student.scores[key] = student.max_points[key]
@@ -478,26 +477,11 @@ def check_has_footnotes_word(doc, student, key = "noteBasPage"):
             student.reasons[key] = "Pas de note de bas de page. "
         # print("This document doesn't contain any footnote")
 
-
-# table des matières auto : /4
-# def verifier_table_des_matieres_word(document, maxPoints):
-#     txt = ""
-#     nsc = 0
-#
-#     # Vérifie s'il y a au moins une table des matières dans le document
-#     if document.TablesOfContents:
-#         if document.TablesOfContents.Count>0:
-#             return (maxPoints, "")
-#     else:
-#         return (0, "Pas de table des matières.")
-
-
 # hyperlien sur un mot /2 TODO
-def verifier_lien_hypertexte_et_TDM_word(document, student):
-    keyToc="TDM"
-    keyLinks="lien"
-    #points = student.scores[key]
-    #raisons = student.reasons
+def check_hyperlinks_and_toc_word(document, student):
+    key_toc = "TDM"
+    key_links = "lien"
+
     # Récupère le texte du document
     text = document.Range().Text
     has_link = False
@@ -505,19 +489,19 @@ def verifier_lien_hypertexte_et_TDM_word(document, student):
     # on supprime les TOC du document
     # print("on supprime les ", document.TablesOfContents.Count ," TOC")
     if document.TablesOfContents.Count > 0:
-        student.scores[keyToc] = student.max_points[keyToc]
-        student.reasons[keyToc] = ""
+        student.scores[key_toc] = student.max_points[key_toc]
+        student.reasons[key_toc] = ""
         toc = document.TablesOfContents(1)
         try:
             toc.Delete()
         except Exception as e:
             sys.stderr.write("supprimer TDM a planté" + str(e))
             student.to_check_manually += "TDM. "
-            student.to_check.add(keyToc)
+            student.to_check.add(key_toc)
 
     else:
-        student.scores[keyToc] = 0
-        student.reasons[keyToc] = "pas de table des matières"
+        student.scores[key_toc] = 0
+        student.reasons[key_toc] = "pas de table des matières"
 
     # for entry in toc.Range.ListFormat.ListString.split("\n"):
     #     print("entry ", entry)
@@ -529,7 +513,7 @@ def verifier_lien_hypertexte_et_TDM_word(document, student):
     except Exception as e:
         sys.stderr.write("gestion des hyperliens a planté" + str(e))
         student.to_check_manually += "liens"
-        student.to_check.add(keyLinks)
+        student.to_check.add(key_links)
     if hyperlinks != "":
         for hyperlink in hyperlinks:
             # Récupère le texte de l'hyperlien
@@ -540,28 +524,28 @@ def verifier_lien_hypertexte_et_TDM_word(document, student):
             except Exception as e:
                 sys.stderr.write("lecture contenu hyperliens a planté" + str(e) + " " + str(hyperlink) + "\n")
                 student.to_check_manually += "Vérifier liens sur mot (crash). "
-                student.to_check.add(keyLinks)
+                student.to_check.add(key_links)
             # TODO : vérifier le nombre ? print("lien trouvé : ", hyperlink_text)
             has_link = True
             if (hyperlink_text in text) and ("http" not in hyperlink_text):
                 # print("Le document contient un hyperlien sur le mot '{}'.".format(hyperlink_text))
                 has_text_link = True
     if has_text_link:
-        student.scores[keyLinks] = student.max_points[keyLinks]
-        student.reasons[keyLinks] = ""
+        student.scores[key_links] = student.max_points[key_links]
+        student.reasons[key_links] = ""
     elif has_link:
-        student.scores[keyLinks] = 0
-        student.reasons[keyLinks] = "lien mais pas sur un texte"
+        student.scores[key_links] = 0
+        student.reasons[key_links] = "lien mais pas sur un texte"
     else:
-        student.scores[keyLinks] = 0
-        student.reasons[keyLinks] = "Pas de lien dans le document."
+        student.scores[key_links] = 0
+        student.reasons[key_links] = "Pas de lien dans le document."
 
 
 # image : /4 TODO
-#	redimenssionnée avec proportions ok
-#	légende
-#	texte à gauche de l'image
-#	espacement de min 0,5 avec le texte
+# * redimenssionnée avec proportions ok
+# * légende
+# * texte à gauche de l'image
+# * espacement de min 0,5 avec le texte
 # def verifier_images_redimensionnees_correctement_PDF(file, pdf_reader, maxPoints):
 #     pages = pdf_reader.getNumPages()
 #
@@ -579,9 +563,9 @@ def verifier_images_redimensionnees_correctement_word(document, student, key="im
     # Pour chaque image du document
     raisons = ""
     max_points = student.max_points[key]
-    to_check_manually = "vérifier si image a gardé proportions + texte à gauche + légende"
+    student.to_check_manually += "vérifier si image a gardé proportions + texte à gauche + légende"
     # TODO : vérifier le reste
-    resize_OK = True
+    resize_ok = True
     points = 0
     has_image = False
     # if len(document.Shapes)>0:
@@ -605,49 +589,49 @@ def verifier_images_redimensionnees_correctement_word(document, student, key="im
     else:
         raisons += "Pas d'image dans le document. "
 
-    if not resize_OK:
+    if not resize_ok:
         raisons += "L'image n'est pas redimensionnée de manière à respecter la proportion originale; "
         print(raisons)
-    return (points, raisons)
+    return points, raisons
 
 
 #####################
 # Récupérer le document
 
-def listerFichiers(nomDossier, extension=".docx"):
-    fichiers = os.listdir(nomDossier)
-    listeFichiers = []
+def liste_files(dir_name, extension=".docx"):
+    fichiers = os.listdir(dir_name)
+    file_list = []
     for fichier in fichiers:
         if fichier.endswith(extension):
-            listeFichiers.append(fichier)
-    return (fichiers, listeFichiers)
+            file_list.append(fichier)
+    return fichiers, file_list
 
 
-def generepar(f):
+def generepar(filename):
     # Lisez le fichier PDF
 
-    with open(f, 'rb') as file:
+    with open(filename, 'rb') as file:
         # Créez un objet PdfFileReader
         pdf = PyPDF2.PdfReader(file)
         # Obtenez les informations du document
         info = pdf.metadata
         # Vérifiez si le fichier a été généré à partir d'un fichier Word ou LibreOffice
-        if info.producer != None:
+        if not(info.producer is None):
             if 'Word' in info.producer:
-                return ("Word")
+                return "Word"
             elif 'LibreOffice' in info.producer:
-                return ("LibreOffice")
+                return "LibreOffice"
             else:
-                return (info.producer)
+                return info.producer
         else:
-            return ("unknown")
+            return "unknown"
 
 
-def verifDocumentWord(filename, word, student, total_pages):
-    max = 0
+def check_word_document(filename, word, student, total_pages):
+    max_points = 0
     group = "Unknown"
     to_check_manually = ""
-    key="nomFichiers"
+    key = "nomFichiers"
 
     fw = filename[0:-4] + ".docx"
     print("Fichier Word ; ", fw)
@@ -657,14 +641,13 @@ def verifDocumentWord(filename, word, student, total_pages):
         sys.stderr.write("pas de fichier Word ? " + str(e))
         to_check_manually += "vérifier présence fichier docx ! "
         student.to_check.add(key)
-        return (max, group, to_check_manually)
+        return max_points, group, to_check_manually
 
     # check weight
     (student.scores["poids"], student.reasons["poids"]) = verifier_moins_de_3_mo(fw, 3, 2)
-    max += 2
+    max_points += 2
 
     document_pydocx = Document(fw)
-
 
     # check Styles
     key = "styles"
@@ -674,22 +657,22 @@ def verifDocumentWord(filename, word, student, total_pages):
         to_check_manually += "Styles "
         sys.stderr.write("vérifier style a planté" + str(e))
         student.to_check.add(key)
-    max += 4
+    max_points += 4
 
     # check Links and TOC
     key = "lien"
     try:
-        verifier_lien_hypertexte_et_TDM_word(document_pywin32, student)
+        check_hyperlinks_and_toc_word(document_pywin32, student)
     except Exception as e:
         to_check_manually += "Liens et TDM. "
         student.to_check.add(key)
         sys.stderr.write("vérifier liens et TDM a planté" + str(e))
 
-    max += 4  # TOC
-    max += 2  # Links
+    max_points += 4  # TOC
+    max_points += 2  # Links
 
     # check header and footer
-    key="piedDePage"
+    key = "piedDePage"
     try:
         group = verifier_entetes_pieds_de_page_word(document_pydocx, student, total_pages)
         to_check_manually += to_check
@@ -697,10 +680,10 @@ def verifDocumentWord(filename, word, student, total_pages):
         to_check_manually += "en-tête/pieds de page a planté. "
         student.to_check.add(key)
         sys.stderr.write("vérifier en-tête/pieds de page a planté" + str(e))
-    max += 4
+    max_points += 4
 
     # check return and spaces
-    key="espaces"
+    key = "espaces"
     try:
         verifier_nombre_enter_et_espaces_word(document_pydocx, student, key=key)
         check_page_returns_word(document_pywin32, student, key)
@@ -709,7 +692,7 @@ def verifDocumentWord(filename, word, student, total_pages):
         student.to_check.add(key)
         sys.stderr.write("vérifier espaces/enter a planté" + str(e))
 
-    max += 4
+    max_points += 4
 
     # check FootNotes
     key = "noteBasPage"
@@ -720,9 +703,9 @@ def verifDocumentWord(filename, word, student, total_pages):
         student.to_check.add(key)
         sys.stderr.write("vérifier notes de bas de page a planté" + str(e))
 
-    max += stud.max_points["noteBasPage"]
+    max_points += stud.max_points["noteBasPage"]
 
-    key="listes"
+    key = "listes"
     # check lists and sub-lists
     try:
         verifier_listes_word(document_pywin32, student, key)
@@ -730,7 +713,7 @@ def verifDocumentWord(filename, word, student, total_pages):
         to_check_manually += key+" a crashé."
         student.to_check.add(key)
         sys.stderr.write("vérifier listes a planté" + str(e))
-    max += student.max_points[key]
+    max_points += student.max_points[key]
 
     # check images
     key = "images"
@@ -743,53 +726,48 @@ def verifDocumentWord(filename, word, student, total_pages):
         to_check_manually += key+" a crashé."
         student.to_check.add(key)
         sys.stderr.write("vérifier images a planté" + str(e))
-    max += student.max_points[key]
+    max_points += student.max_points[key]
 
-    key="section"
+    key = "section"
     try:
         check_sections_word(document_pydocx, stud, key)
     except Exception as e:
         to_check_manually += key
         student.to_check.add(key)
         sys.stderr.write("vérifier sections a planté" + str(e))
-    max += stud.max_points[key]
+    max_points += stud.max_points[key]
 
     # Ferme le document et Word
     document_pywin32.Close(SaveChanges=False)
 
     stud.to_check.add("orthographe")
-    #stud.to_check.add("")
+    # stud.to_check.add("")
 
-    return (max, group, to_check_manually)
+    return max_points, group, to_check_manually
 
 
-def check_pdf_file(f, student):
+def check_pdf_file(filename, student):
     to_check_manually = ""
-    max = 0
-    total_pages = 0
-    with open(f, 'rb') as file:
+    max_points = 0
+    with open(filename, 'rb') as file:
         # Créez un objet PdfFileReader
         pdf = PyPDF2.PdfReader(file)
         total_pages = verifier_nombre_pages_pdf(pdf, 3, 10, student)
         # check number of pages
-        ###(scores_set["pages"], reasons_set["pages"]) = verifier_nombre_pages_PDF(file, pdf 3, 10, 2)
-        max += 2
+        max_points += 2
 
         # verifier_images_redimensionnees_correctement_PDF(file, pdf, 4)
-    return (max, to_check_manually, total_pages)
+    return max_points, to_check_manually, total_pages
 
 
 # TODO attention, si un fichier est ouvert, le programme peut bugger.
 # Il "suffit" d'ouvrir le document Word, ça bugge mais fait apparaitre la fenêtre pour "ne pas sauver"...
 #           Je ne vois pas encore bien le pourquoi !
 
-
-
 if __name__ == '__main__':
 
-    ################################## TODO #########################################
-    # TODO : not working
     excel = win32com.client.gencache.EnsureDispatch("Excel.Application")
+    # TODO : check if file is open, then close it before
     # try:
     #     wb = excel.Workbooks.Open(excel_file_for_results)
     #     wb.Close(SaveChanges=False)
@@ -802,7 +780,7 @@ if __name__ == '__main__':
     #     print("pyxl Closed the workbook without saving")
     # except:
     #     print("pyxl  Workbook not open")
-    ##################################       #########################################
+    # #################################       #########################################
 
     # Créer un nouveau tableur
     workbook = openpyxl.Workbook()
@@ -825,53 +803,53 @@ if __name__ == '__main__':
 
     py_win32_word_app = win32com.client.Dispatch("Word.Application")
 
-    # on prends la liste des fichiers PDF
-    (listefichiers, lf) = listerFichiers(".", ".pdf")
+    # on prend la liste des fichiers PDF
+    (listefichiers, lf) = liste_files(".", ".pdf")
     # print(listefichiers)
     for f in lf:
         stud = Student()
 
-        max = 0
-        group = "unknown"
+        max_score = 0
+        grp = "unknown"
 
         # check filename
         # voir par quoi c'est généré : Word ou LibO
         # nom fichier :  2023-01-TIC1—Nom- /2
         verifier_nom_fichiers(f, "2023-01-TIC1", stud)
-        max += 2
+        max_score += 2
 
         # check 2 formats
         verifier_deux_formats_fichiers(f, listefichiers, 2, stud.scores, stud.reasons)
-        max += 2
+        max_score += 2
 
         # check number of pages
         # (points["pages"], raisons["pages"]) = verifier_nombre_pages_PDF(f, 3, 10, 2)
         # max+=2
         (m, to_check, tot_pages) = check_pdf_file(f, stud)
-        max += m
+        max_score += m
         stud.to_check_manually += to_check
         generateur = generepar(f)
 
         # check according to OS
         if generateur == "Word":
-            (maxPoints, group, to_check) = verifDocumentWord(f, py_win32_word_app, stud, tot_pages)
+            (maxPoints, grp, to_check) = check_word_document(f, py_win32_word_app, stud, tot_pages)
             stud.to_check_manually += to_check
-            max += maxPoints
+            max_score += maxPoints
         elif generateur == "LibreOffice":
             print("Fichier LibreOffice")
         else:
             try:
-                (maxPoints, group, to_check) = verifDocumentWord(f, py_win32_word_app, stud, tot_pages)
+                (maxPoints, grp, to_check) = check_word_document(f, py_win32_word_app, stud, tot_pages)
                 stud.to_check_manually += to_check
-                max += maxPoints
-            except Exception as e:
-                sys.stderr.write("ce n'est pas un document Word :-( " + str(e))
+                max_score += maxPoints
+            except Exception as exc:
+                sys.stderr.write("ce n'est pas un document Word :-( " + str(exc))
 
-        print(stud.firstname, " ", stud.name, " ", group, " : ", str(sum(stud.scores.values())), "sur ", max)
-        if group == "NP":
+        print(stud.firstname, " ", stud.name, " ", grp, " : ", str(sum(stud.scores.values())), "sur ", max_score)
+        if grp == "NP":
             fill_result_line_in_excel(worksheet_NP, row_NP, stud)
             row_NP += 1
-        elif group == "PS":
+        elif grp == "PS":
             fill_result_line_in_excel(worksheet_PS, row_PS, stud)
             row_PS += 1
         else:
@@ -890,5 +868,3 @@ if __name__ == '__main__':
     workbook.save(excel_file_for_results)
 
     print("done")
-
-
