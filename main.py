@@ -12,7 +12,7 @@ import openpyxl
 # from openpyxl import load_workbook
 from openpyxl.comments import Comment
 from openpyxl.utils.cell import get_column_letter
-from openpyxl.styles import PatternFill
+from openpyxl.styles import Font, PatternFill
 
 from student import Student
 
@@ -20,37 +20,40 @@ excel_file_for_results = "./2023-01-resultats-automatiques.xlsx"
 
 
 # TODO  utilisation student systématique
-# TODO  angliciser tout
-# TODO  beaucoup plus tard : internationalisation
+# TODO  give all var and function english names
+# TODO  beaucoup plus tard : internationalisation des messages dans le fichier xls
 
 # TODO : vérifier pourquoi Manon Jadot plante chaque fois
-# TODO : mettre sur un Git quelconque ! ! !
 # TODO : vérifier si un fichier est déjà ouvert avant de l'ouvrir, en Word ET en excel. Le fermer si oui.
 # TODO : ajouter mesure temps par fonction, parce que c'est trope lent (commencer par returns ! )
 
-# TODO : mettre en jaune les cellules qu'il faut que je vérifie manuellement !
 # TODO : Formats
-# todo : nombre pages
 # todo : orthographe
 # todo : citation
-# todo : note bas de page
 
-# todo : mettre titres en gras dans fichier excel
 # todo pour dans beaucoup plus tard : figer titres et noms
+
+def fill_title_cell_excel(worksheet, value, row, col):
+    font = Font(bold=True)
+    worksheet.cell(row=row, column=col).value = value
+    cell = worksheet[get_column_letter(col) + str(row)]
+    cell.font = font
 
 
 def fill_first_lines_excel(worksheet, student):
     row = 1
-    worksheet.cell(row=row, column=1).value = "Nom"
-    worksheet.cell(row=row, column=2).value = "Prénom"
-    worksheet.cell(row=row, column=3).value = "Total"
+    fill_title_cell_excel(worksheet, "Nom", row, 1)
+    fill_title_cell_excel(worksheet, "Prénom", row, 2)
+    fill_title_cell_excel(worksheet, "Total", row, 3)
     col = 4
     for key in student.scores.keys():
-        worksheet.cell(row=row, column=col).value = key
+        fill_title_cell_excel(worksheet, key, row=row, col=col)
         col += 1
-    worksheet.cell(row=row, column=col).value = "à vérifier manuellement"
-    col = 4
+    fill_title_cell_excel(worksheet, "à vérifier manuellement", row=row, col=col)
+    # worksheet.cell(row=row, column=col).value = "à vérifier manuellement"
     row += 1
+    worksheet.cell(row=row, column=1).value = "Vérification champs"
+    col = 4
     for key, value in student.max_points.items():
         worksheet.cell(row=row, column=col).value = key
         col += 1
@@ -65,11 +68,6 @@ def fill_first_lines_excel(worksheet, student):
                                               str(row) + ")"
 
     row += 1
-
-    # col += 2
-    # for key in reasons_set:
-    #     worksheet.cell(row=1, column=col).value = key
-    #     col += 1
     return row
 
 
@@ -135,7 +133,7 @@ def verifier_nom_fichiers(mfile, template, student):
     if mfile.startswith(template):
         points += student.max_points["nomFichiers"]
     # f.replace(format,"")
-    mfile = mfile[len(template) + 1:-4]  # TODO : sizeof template, pas 13
+    mfile = mfile[len(template) + 1:-4]
     mfile = mfile.replace("—", "")
     mfile = mfile.replace(" ", "")
     # if "schoubben" in mfile:  # TODO 2023 : manually done
@@ -360,6 +358,10 @@ def verifier_entetes_pieds_de_page_word(document, student, total_pages, key="pie
         raison += "Le nom ne se trouve pas en pied de page."
     # print("points après pied de page - gauche", points)
 
+    # test for aligns
+    # foots = footer.split("\t")
+    # print(foots)
+
     student.scores[key] = points
     student.reasons[key] = raison
     student.to_check_manually += to_check_manually
@@ -460,7 +462,7 @@ def verifier_listes_word(document, student, key):
 
 
 # citation avec guillemets : /2 TODO ??
-# note de bas de page avec sources : / 2 TODO
+# note de bas de page avec sources : / 2
 def check_has_footnotes_word(doc, student, key="noteBasPage"):
     footnotes = doc.Footnotes
     if footnotes.Count > 0:
@@ -477,8 +479,9 @@ def check_has_footnotes_word(doc, student, key="noteBasPage"):
             student.reasons[key] = "Pas de note de bas de page. "
         # print("This document doesn't contain any footnote")
 
-# hyperlien sur un mot /2 TODO
+
 def check_hyperlinks_and_toc_word(document, student):
+    # pywin32
     key_toc = "TDM"
     key_links = "lien"
 
@@ -659,7 +662,7 @@ def check_word_document(filename, word, student, total_pages):
         student.to_check.add(key)
     max_points += 4
 
-    # check Links and TOC
+    # check hyperlinks and TOC
     key = "lien"
     try:
         check_hyperlinks_and_toc_word(document_pywin32, student)
@@ -855,16 +858,15 @@ if __name__ == '__main__':
         else:
             fill_result_line_in_excel(worksheet_unknown, row_unknown, stud)
             row_unknown += 1
-        # print(points)
-        # print(raisons)
         print("========================================")
-        # time.sleep(5)
+
+    # add stats to spreadsheet file
     fill_last_line_in_excel(worksheet_PS, row_PS, stud, first_empty_row - 1)
     fill_last_line_in_excel(worksheet_NP, row_NP, stud, first_empty_row - 1)
     fill_last_line_in_excel(worksheet_unknown, row_unknown, stud, first_empty_row - 1)
     py_win32_word_app.Quit()
 
-    # Enregistrer le tableur
+    # save spreadsheet
     workbook.save(excel_file_for_results)
 
     print("done")
