@@ -1,5 +1,11 @@
 import sys
 import os
+import psutil
+from tkinter import messagebox
+
+debug = True
+
+
 # import re
 
 import PyPDF2
@@ -19,13 +25,14 @@ from student import Student
 
 excel_file_for_results = "./2024-01-resultats-automatiques.xlsx"
 
-# TODO  vérifier que fichier Word avant de lancer le reste : for el in *.docx? filetype ?
-# TODO  utilisation student systématique
-# TODO  angliciser tout
-# TODO  beaucoup plus tard : internationalisation
+# TODO  everything in english
+# TODO  Later : internationalisation
 
-# TODO : mettre sur un Git quelconque ! ! !
-# TODO : vérifier si un fichier est déjà ouvert avant de l'ouvrir, en Word ET en excel. Le fermer si oui.
+# TODO  vérifier que c'est bien un fichier Word ou ... avant de lancer le reste : for el in *.docx? filetype ?
+# TODO  utilisation student systématique
+
+# TODO : vérifier si un fichier est déjà ouvert avant de l'ouvrir, en Word. Prévenir de le fermer si oui.
+# TODO : would it be better to force close if a file is already open ? For xlsx, maybe.
 # TODO : ajouter mesure temps par fonction, parce que c'est trop lent (commencer par returns ! )
 
 # TODO : Formats
@@ -35,6 +42,21 @@ excel_file_for_results = "./2024-01-resultats-automatiques.xlsx"
 
 # todo : mettre titres en gras dans fichier excel
 # todo pour dans beaucoup plus tard : figer titres et noms
+
+def execute_ensuring_file_not_open(file, command):
+    command_executed = False
+    while not command_executed:
+        if os.path.exists(file):
+            try:
+                os.rename(file, file)
+                print_debug(debug, 'Access on file "' + file + '" is available!')
+                command(file)
+                command_executed = True
+            except OSError as e:
+                print('Access-error on file "' + file + '"! \n' + str(e))
+                messagebox.showinfo(title="Script de correction automatique",
+                                    message="Fermer le document Excel pour la nouvelle correction")
+    # workbook.save(excel_file_for_results)
 
 
 def fill_first_lines_excel(worksheet, student):
@@ -851,6 +873,20 @@ fill_last_line_in_excel(worksheet_unknown, row_unknown, stud, first_empty_row - 
 py_win32_word_app.Quit()
 
 # Enregistrer le tableur
-workbook.save(excel_file_for_results)
+execute_ensuring_file_not_open(excel_file_for_results, workbook.save)
+
+
+# excel_file_saved = False
+# while not excel_file_saved:
+#     if os.path.exists(excel_file_for_results):
+#         try:
+#             os.rename(excel_file_for_results, excel_file_for_results)
+#             print_debug(debug, 'Access on file "' + excel_file_for_results +'" is available!')
+#             workbook.save(excel_file_for_results)
+#             excel_file_saved = True
+#         except OSError as e:
+#             print('Access-error on file "' + excel_file_for_results + '"! \n' + str(e))
+#             messagebox.showinfo(title="Script de correction automatique", message="Fermer le document Excel pour la nouvelle correction")
+#workbook.save(excel_file_for_results)
 
 print("done")
