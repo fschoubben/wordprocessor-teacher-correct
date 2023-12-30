@@ -141,6 +141,9 @@ End Function"""
     macros = [macro_count_words, macro_page_number, macro_tot_page_number, macro_check_page_num_and_nbr, macro_check_links]
     return macros
 
+def print_debug(debug, message):
+    if debug:
+        print(message)
 def check_hyperlinks(word_app, student, key = "lien", debug=False):
 
     max_points = student.max_points[key]
@@ -154,7 +157,7 @@ def check_hyperlinks(word_app, student, key = "lien", debug=False):
         if links:
             score+=max_points
         else:
-            print("KO ! NON pour les hyperliens avec un texte différent")
+            print_debug(debug, "KO ! NON pour les hyperliens avec un texte différent")
             why+="pas d'hyperliens avec un texte différent"
     except Exception as e:
         sys.stderr.write("error in page number and page total word_macros.py\check_hyperlinks " + str(e))
@@ -167,8 +170,7 @@ def check_hyperlinks(word_app, student, key = "lien", debug=False):
     student.to_check_manually += to_check_manually
     if student.scores[key] < student.max_points[key]:
         student.to_check.add(key)
-    if debug:
-        print("fin check_hyperlinks", links)
+    print_debug(debug, "fin check_hyperlinks "+ str(links))
     return {}
 
 def check_Page_num_and_tot_word(word_app, student, key = "numEtNbrPages", debug=False):
@@ -185,13 +187,13 @@ def check_Page_num_and_tot_word(word_app, student, key = "numEtNbrPages", debug=
         if pied_de_page:
             score+=1
         else:
-            print("KO ! NON pour le nombre de page")
+            print_debug(debug, "KO ! NON pour le nombre de page")
             why+="nombre de page non indiqué de manière automatique"
         pied_de_page = word_app.Run("VerifierNbrePagesTotPiedDePage")
         if pied_de_page:
             score+=1
         else:
-            print("KO ! NON pour le nombre de page total")
+            print_debug(debug, "KO ! NON pour le nombre de page total")
             why += "nombre total de page non indiqué de manière automatique"
         if debug:
             pts = word_app.Run("VerifierNumeroEtNombrePagesPiedDePage")
@@ -207,8 +209,7 @@ def check_Page_num_and_tot_word(word_app, student, key = "numEtNbrPages", debug=
     student.to_check_manually += to_check_manually
     if student.scores[key] < student.max_points[key]:
         student.to_check.add(key)
-    if debug:
-        print("fin check_Page_num_and_tot_word")
+    print_debug(debug, "fin check_Page_num_and_tot_word")
     return {}
 
 #def add_word_macros_pywin32():
@@ -222,8 +223,7 @@ def add_word_macro(document, debug=False):
             new_module.CodeModule.AddFromString(m)
     except Exception as e:
         print(f"Une erreur s'est produite dans l'ajout de la macro : {e}")
-    if debug:
-        print("macros ajoutées")
+    print_debug(debug, "macros ajoutées")
     #try:
     #    word_count = doc.Run("CompterMots")
     #    print(f"Le nombre de mots dans le document est : {word_count}")
