@@ -4,10 +4,16 @@ import win32com.client
 ### Macro's Definition
 def define_macros():
     macro_check_links = """
-Function ContainsExternalHyperlinkWithDisplayText() As Boolean
+Function EvaluateHyperlinkConditions() As Double
     Dim hyperlink As Hyperlink
     Dim fieldCode As String
     Dim displayText As String
+    Dim hasExternalLink As Boolean
+    Dim hasSameDisplayAndFieldCode As Boolean
+
+    ' Initialize flags
+    hasExternalLink = False
+    hasSameDisplayAndFieldCode = False
 
     ' Iterate through all hyperlinks in the document
     For Each hyperlink In ActiveDocument.Hyperlinks
@@ -15,16 +21,25 @@ Function ContainsExternalHyperlinkWithDisplayText() As Boolean
         fieldCode = hyperlink.SubAddress
         displayText = hyperlink.TextToDisplay
 
-        ' Check if the hyperlink is an external link and display text is different from the field code
-        If hyperlink.Address <> "" And displayText <> fieldCode Then
-            ContainsExternalHyperlinkWithDisplayText = True
-            Exit Function
+        ' Check conditions
+        If hyperlink.Address <> "" Then
+            hasExternalLink = True
+            If displayText = fieldCode Then
+                hasSameDisplayAndFieldCode = True
+            End If
         End If
     Next hyperlink
 
-    ' No such hyperlink found
-    ContainsExternalHyperlinkWithDisplayText = False
-End Function"""
+    ' Evaluate and return the result
+    If hasExternalLink And Not hasSameDisplayAndFieldCode Then
+        EvaluateHyperlinkConditions = 2
+    ElseIf hasExternalLink Then
+        EvaluateHyperlinkConditions = 0.5
+    Else
+        EvaluateHyperlinkConditions = 0
+    End If
+End Function
+"""
     macro_check_page_num_and_nbr = """
 Function VerifierNumeroEtNombrePagesPiedDePage() As Integer
     Dim section As Section
@@ -146,19 +161,25 @@ def print_debug(debug, message):
         print(message)
 def check_hyperlinks(word_app, student, key = "lien", debug=False):
 
-    max_points = student.max_points[key]
+    max_scores = student.max_points[key]
     why = ""
     to_check_manually = ""
     group = "unknown"
     score = 0
+    links = ""
 
     try:
-        links = word_app.Run("ContainsExternalHyperlinkWithDisplayText")
-        if links:
-            score+=max_points
-        else:
+        score = word_app.Run("EvaluateHyperlinkConditions")
+        if score == 0.5:
+            print_debug(debug, "KO ! hyperlien présent, mais sans un texte différent. ")
+            why += "hyperlien présent, mais sans un texte différent. "
+        elif score <= 0:
             print_debug(debug, "KO ! NON pour les hyperliens avec un texte différent")
             why+="pas d'hyperliens avec un texte différent"
+        elif score == max_scores:
+            print_debug(debug, "Tout va bien dans les hyperliens")
+        else:
+            print_debug("choses étrange dans check_hyperlink")
     except Exception as e:
         sys.stderr.write("error in page number and page total word_macros.py\check_hyperlinks " + str(e))
     #finally:
@@ -237,7 +258,7 @@ def add_word_macro(document, debug=False):
 
 if __name__ == "__main__":
     filename = "2023-01-TIC1-Test-1.docx"
-    #filename = "2023-01-TIC1-Test-2.docx"
+    filename = "2023-01-TIC1-Test-2.docx"
     from student import Student
     stud = Student()
     # Créer une instance de l'application Word
