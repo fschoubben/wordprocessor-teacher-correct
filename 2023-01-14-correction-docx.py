@@ -24,7 +24,7 @@ from openpyxl.styles import PatternFill
 
 from student import Student
 
-excel_file_for_results = "./2024-01-resultats-automatiques.xlsx"
+excel_file_for_results = "./2024-01-auto-correct-results.xlsx"
 
 # TODO  everything in english
 # TODO  Later : internationalisation
@@ -57,6 +57,8 @@ def execute_ensuring_file_not_open(file, command):
                 print('Access-error on file "' + file + '"! \n' + str(e))
                 messagebox.showinfo(title="Script de correction automatique",
                                     message="Fermer le document Excel pour la nouvelle correction")
+        else:
+            command(file)
     # workbook.save(excel_file_for_results)
 
 
@@ -591,7 +593,11 @@ def verifDocumentWord(filename, word, student, total_pages):
     # check header and footer
     key="piedDePage"
     try:
-        group = verifier_entetes_pieds_de_page_word(document_pydocx, student)
+        group = check_header_and_footer(py_win32_word_app, student, middle_text_asked="Examen TICE – B1", key="piedDePage")
+        print("Groupe : ", group)
+        # TODO : adapt with new exam : S2-B1 - Numérique
+        #check_header_and_footer(py_win32_word_app, student, middle_text_asked="S2-B1 - Numérique", key="piedDePage")
+        #group = verifier_entetes_pieds_de_page_word(document_pydocx, student)
         to_check_manually += to_check
     except Exception as e:
         to_check_manually += "en-tête/pieds de page a planté. "
