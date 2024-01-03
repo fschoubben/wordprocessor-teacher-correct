@@ -1,12 +1,12 @@
 class Student:
     max_points = {"format": 2, "nomFichiers": 2,"poids": 2, "orthographe": 0, "pages": 0,
                   "styles": 4, "piedDePage": 4, "espaces": 4, "TDM": 2, "section": 2, "listes": 2,
-                  "tableau":2,  "citation": 2, "noteBasPage": 2, "lien": 2, "images": 4}
+                  "tableau": 2,  "citation": 2, "noteBasPage": 2, "lien": 2, "images": 4}
 
     def reset(self):
         self.scores = {"format": 0, "nomFichiers": 0, "poids": 0, "orthographe": 0, "pages": 0,
                        "styles": 0, "piedDePage": 0, "espaces": 0, "TDM": 0, "section": 0, "listes": 0,
-                       "tableau":2,  "citation": 0, "noteBasPage": 0, "lien": 0, "images": 0 }
+                       "tableau": 2,  "citation": 0, "noteBasPage": 0, "lien": 0, "images": 0 }
         self.reasons = {"format": "", "nomFichiers": "", "poids": "", "orthographe": "", "pages": "",
                         "styles": "", "piedDePage": "", "espaces": "", "TDM": "", "section": "", "listes": "",
                         "tableau": "", "citation": "", "noteBasPage": "", "lien": "", "images": ""}
