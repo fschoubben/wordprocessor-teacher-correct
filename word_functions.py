@@ -2,6 +2,16 @@ import os
 from docx import Document
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 
+def check_sections_word(doc, student, key="section"):
+    # CAUTION : these are "bonus points"
+    if len(doc.sections) > 1:
+        student.scores[key] = student.max_points[key]
+    else:
+        # CAREFUL: these are "bonus points"
+        student.scores[key] = 0
+        student.reasons[key] = "pas de section trouvée. "
+
+
 
 
 if __name__ == "__main__":

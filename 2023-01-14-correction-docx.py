@@ -5,7 +5,8 @@ from tkinter import messagebox
 
 debug = True
 
-
+header_to_check="S2"
+middle_footer_to_check="S2-B1 - Numérique"
 # import re
 
 import PyPDF2
@@ -159,15 +160,13 @@ def verifier_nom_fichiers(mfile, template, student):
     points = 0
     if mfile.startswith(template):
         points += student.max_points["nomFichiers"]
-    # f.replace(format,"")
-    mfile = mfile[len(template) + 1:-4]  # TODO : sizeof template, pas 13
-    mfile = mfile.replace("—", "")
-    mfile = mfile.replace(" ", "")
-    # if "schoubben" in mfile:  # TODO 2023 : manually done
+    #mfile = mfile.replace("—", "")
+    #mfile = mfile.replace(" ", "")
+    # if "schoubben" in mfile:  # TODO 2023 : manually done, try to emprove to automate...
     #     raisons="mauvais nom de fichier; "
     nomcomplet = mfile.split("-")
-    nom = nomcomplet[0]
-    prenom = nomcomplet[-1]
+    nom = nomcomplet[3]
+    prenom = nomcomplet[4]
     # print("in nom prenom = ", nom, prenom, nomcomplet)
     student.name = nom
     student.firstname = prenom
@@ -234,18 +233,6 @@ def verifier_nombre_pages_pdf(pdf, min_pages, max_pages, student):
 
 # orthographe OK (/0) ?? grammalect ? TODO ?
 # utilisation de styles : Titre 1, Titre 2, normal == justifié
-
-def check_sections_word(doc, student, key="section"):
-    # CAUTION : these are "bonus points"
-    if len(doc.sections) > 1:
-        student.scores[key] = 2
-        student.reasons[key] = "Bonus : contient plusieurs sections"
-    else:
-        # CAREFUL: these are "bonus points"
-        student.scores[key] = 0
-        student.reasons[key] = ""
-
-
 def lister_styles_word(doc):
     listeTitres = []
     #     for parag in doc.paragraphs:
@@ -593,10 +580,11 @@ def verifDocumentWord(filename, word, student, total_pages):
     # check header and footer
     key="piedDePage"
     try:
-        group = check_header_and_footer(py_win32_word_app, student, middle_text_asked="Examen TICE – B1", key="piedDePage")
+        # 2023 - group = check_header_and_footer(py_win32_word_app, student, middle_text_asked="Examen TICE – B1", key="piedDePage")
+        group = check_header_and_footer(py_win32_word_app, student, header_to_check, middle_text_asked=middle_footer_to_check, key="piedDePage")
         print("Groupe : ", group)
-        # TODO : adapt with new exam : S2-B1 - Numérique
-        #check_header_and_footer(py_win32_word_app, student, middle_text_asked="S2-B1 - Numérique", key="piedDePage")
+
+        #check_header_and_footer(py_win32_word_app, student, middle_text_asked=middle_footer_to_check, key="piedDePage")
         #group = verifier_entetes_pieds_de_page_word(document_pydocx, student)
         to_check_manually += to_check
     except Exception as e:
@@ -652,7 +640,7 @@ def verifDocumentWord(filename, word, student, total_pages):
     key = "tableau"
     # check table
     try:
-        check_tables(py_win32_word_app, student, key, True)
+        check_tables(py_win32_word_app, student, key)
     except Exception as e:
         to_check_manually += key + " a crashé."
         student.to_check.add(key)
@@ -762,7 +750,7 @@ for f in lf:
     # check filename
     # voir par quoi c'est généré : Word ou LibO
     # nom fichier :  2023-01-TIC1—Nom- /2
-    verifier_nom_fichiers(f, "2023-01-TIC1", stud)
+    verifier_nom_fichiers(f, "2024-01-S2-", stud)
     max += 2
 
     # check 2 formats

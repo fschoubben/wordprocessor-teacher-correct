@@ -2,6 +2,9 @@ import sys
 import os
 import win32com.client
 
+header_to_check="S2"
+middle_footer_to_check="S2-B1 - Numérique"
+
 from tkinter import messagebox
 import time
 
@@ -272,10 +275,10 @@ def check_footer_left_text(student, complete_footer, left_footer, max_score, deb
             #and ((student.firstname.lower() in footer.lower()) or (student.firstname[0].lower() in footer.lower())):
         score = max_score / 8
         print_debug(debug, "name " + student.name + "in footer but not on the left")
-        to_check_manually = "Nom en bas à gauche ? si oui, +" + str(max_score / 8)
+        to_check_manually = "Nom en bas à gauche ? si oui, +" + str(max_score / 8)+". "
         # TODO : vérifier qu'il est bien à gauche"
     else:
-        why = "Le nom ne se trouve pas en pied de page."
+        why = "Le nom ne se trouve pas en pied de page. "
         to_check_manually = "Nom en bas à gauche ? "
         print_debug(debug, "No name in footer")
     return(score, why, to_check_manually)
@@ -299,12 +302,12 @@ def check_footer_middle_text(complete_footer, footer_middle, middle_text, max_sc
         score = max_score / 8
         print_debug(debug, "middle_text OK mais pas vraiment au milieu")
         # TODO : vérifier qu'il est bien au milieu
-        why = middle_text+" écrit, mais pas au milieu du pied de page."
-        to_check_manually = "vérifier le pied de page (milieu)"
+        why = middle_text+" écrit, mais pas au milieu du pied de page. "
+        to_check_manually = "vérifier le pied de page (milieu). "
         print_debug(debug, middle_text+" in footer but not center")
     else :
-        why = "Pas de "+middle_text+" écrit au milieu du pied de page."
-        to_check_manually = "vérifier le pied de page (milieu)"
+        why = "Pas de "+middle_text+" écrit au milieu du pied de page. "
+        to_check_manually = "vérifier le pied de page (milieu). "
         print_debug(debug, "No "+middle_text+" in footer")
     print_debug(debug, "middle_text score ="+str(score)+"/"+str(max_score))
     return(score, why, to_check_manually)
@@ -323,13 +326,13 @@ def check_Page_num_and_tot_word(word_app, student, key = "piedDePage", debug=Fal
             score+=max_points/8
         else:
             print_debug(debug, "KO ! NON pour le nombre de page")
-            why+="nombre de page non indiqué de manière automatique"
+            why+="nombre de page non indiqué de manière automatique. "
         pied_de_page = word_app.Run("VerifierNbrePagesTotPiedDePage")
         if pied_de_page:
             score+=max_points/8
         else:
             print_debug(debug, "KO ! NON pour le nombre de page total")
-            why += "nombre total de page non indiqué de manière automatique"
+            why += "nombre total de page non indiqué de manière automatique. "
         print_debug(debug, "nbr_tot_pages : "+str(score)+"/"+str(max_points))
     except Exception as e:
         sys.stderr.write("error in page number and page total word_macors.py\check_page_num_and_tot_word " + str(e))
@@ -340,50 +343,64 @@ def get_footer_parts(complete_footer, debug):
     middle_footer=""
     #TODO check Test 5 : why is it working ? split by spaces but retrieve points ?
     if "\t" in complete_footer:
+        print_debug(debug, "tab separated footer")
         footer_text = complete_footer.split("\t")
         if len(footer_text) >= 3:
             left_footer = footer_text[0]
             middle_footer = footer_text[1]
-            right_footer = footer_text[2]
         elif len(footer_text) == 2:
             left_footer = footer_text[0]
             middle_footer = footer_text[1]
+        print_debug(debug, left_footer+ "----"+ middle_footer)
     elif "0" in complete_footer:  # in some cases, The "tab" characters ar returned as 0 !? Ex : Test3.docx
         footer_text = complete_footer.split("0")
         if len(footer_text) >= 3:
+            # TODO : check why it's more than 3 sometimes, begining with 0 ?
+            print_debug(debug, "4 x 0 separated footer : "+str(len(footer_text))+"elements found")
+            if debug:
+                for el in footer_text:
+                    print(el)
+            # TODO : check the one with the name for left_footer ?
+            # TODO : ugly hack for strange footers received from macro
+            left_footer = footer_text[0]+footer_text[1]
+            middle_footer = footer_text[1]+footer_text[2]
+
+            print_debug(debug,left_footer+"----"+ middle_footer)
+        elif len(footer_text) == 3:
+            print_debug(debug, "3 x 0 separated footer : "+str(len(footer_text))+"elements found")
+            for el in footer_text:
+                print(el)
             left_footer = footer_text[0]
             middle_footer = footer_text[1]
-            right_footer = footer_text[2]
+
+            print(left_footer,"----", middle_footer)
         elif len(footer_text) == 2:
+            print_debug(debug, "2 x 0 separated footer")
             left_footer = footer_text[0]
             middle_footer = footer_text[1]
+        else:
+            print_debug(debug, "0 non separable footer")
+
+    else:
+        print_debug(debug, "not separable footer")
     return(left_footer, middle_footer)
 
-def check_right_header(word_app, student, key = "piedDePage", debug=False):
-    # TODO : adapt scores and heading text (make it generic/parameter ?)
+def check_right_header(word_app, header_to_check, max_score, debug=False):
     # TODO : how to be OK if the position come from 1 or 2 tabs ?
-    max_scores = student.max_points[key]
     why = ""
     to_check_manually = ""
     group = "unknown"
     score = 0
-    links = ""
 
     try:
         header_text = word_app.Run("GetRightAlignedHeaderText")
-        if "NPS" in header_text:
-            score += max_scores / 4
-            group = "PS"
-            print_debug(debug, "NPS OK")
-        elif "NP" in header_text:
-            score += max_scores / 4
-            group = "NP"
-            print_debug(debug, "NP OK")
+        if header_to_check in header_text:
+            score += max_score
+            group = header_to_check
+            print_debug(debug, "header OK")
         else:
-            why += "Pas de section écrite correctement en en-tête."
+            why += "Pas de section écrite correctement en en-tête. "
             print_debug(debug, "Pas de section écrite correctement en en-tête.")
-
-            group = "unknown"
 
     except Exception as e:
         sys.stderr.write("error in word_macros.py\check_header " + str(e))
@@ -393,38 +410,36 @@ def check_right_header(word_app, student, key = "piedDePage", debug=False):
     student.to_check_manually += to_check_manually
     if student.scores[key] < student.max_points[key]:
         student.to_check.add(key)
-    print_debug(debug, "fin check_header "+ str(links))
+    print_debug(debug, "fin check_header ")
     return {}
-def check_header(word_app, student, key = "piedDePage", debug=False):
+def check_header(word_app, header_to_check, max_score, debug=False):
     # TODO : adapter les points et le texte des en-têtes (généraliser ?)
-    max_scores = student.max_points[key]
     why = ""
     to_check_manually = ""
     group = "unknown"
     score = 0
 
     try:
-        header_text = word_app.Run("GetHeaderOfFirstSection")
-        if "NPS" in header_text:
-            score += max_scores / 4
-            group = "PS"
-            print_debug(debug, "NPS OK")
-        elif "NP" in header_text:
-            score += max_scores / 4
-            group = "NP"
-            print_debug(debug, "NP OK")
+        header_text = word_app.Run("GetRightAlignedHeaderText")
+        if header_text=="No right-aligned text found in the header.":
+            header_text=word_app.Run("GetHeaderOfFirstSection")
+        if header_to_check in header_text:
+            score += max_score
+            group = header_to_check
+            print_debug(debug, "header OK")
         else:
-            why += "Pas de section écrite correctement en en-tête."
-            print_debug(debug, "Pas de section écrite correctement en en-tête.")
+            why += "Pas de section écrite correctement en en-tête. "
+            print_debug(debug, "Pas de section écrite correctement en en-tête."+header_text)
 
             group = "unknown"
+
 
     except Exception as e:
         sys.stderr.write("error in word_macros.py\check_header " + str(e))
 
-    print_debug(debug, "check_header "+ str(score)+"/"+str(max_scores)+" group : "+group)
+    print_debug(debug, "check_header "+ str(score)+"/"+str(max_score)+" group : "+group)
     return (score, why, to_check_manually, group)
-def check_header_and_footer(word_app, student, middle_text_asked="S2-B1 - Numérique", key = "piedDePage", debug=False):
+def check_header_and_footer(word_app, student, header_to_check, middle_text_asked="S2-B1 - Numérique", key = "piedDePage", debug=False):
     # TODO : adapt scores and heading text (make it generic/parameter ?)
     # TODO : how to be OK if the position come from 1 or 2 tabs ?
     max_scores = student.max_points[key]
@@ -434,7 +449,7 @@ def check_header_and_footer(word_app, student, middle_text_asked="S2-B1 - Numér
     footer_text=[]
     right_footer=""
     # ---------------------------- Header ------------------------------
-    (sc, wh, tch, group) = check_header(word_app, student, key, debug)
+    (sc, wh, tch, group) = check_header(word_app,  header_to_check, max_scores/4, debug)
     score += sc
     why += wh
     to_check_manually += tch
@@ -496,7 +511,7 @@ def check_hyperlinks(word_app, student, key = "lien", debug=False):
             why += "hyperlien présent, mais sans un texte différent. "
         elif score <= 0:
             print_debug(debug, "KO ! NON pour les hyperliens avec un texte différent")
-            why+="pas d'hyperliens avec un texte différent"
+            why+="pas d'hyperliens avec un texte différent. "
         elif score == max_scores:
             print_debug(debug, "Tout va bien dans les hyperliens")
         else:
@@ -560,15 +575,32 @@ def add_word_macro(document, debug=False):
     # Fermer l'application Word
     #word_app.Quit()
 
+def close_word():
+    try:
+        # Create a Word application object
+        word_app = win32com.client.Dispatch("Word.Application")
+        word_app.Quit(SaveChanges=0)
+
+        print_debug(debug, "Word closed successfully")
+
+    except Exception as e:
+        print(f"Error: {e}")
 
 if __name__ == "__main__":
+    close_word()
     global debug
     debug = True
-    filename = "2023-01-TIC1-Test-1.docx"
-    #filename = "2023-01-TIC1-Test-2.docx"
-    #filename = "2023-01-TIC1-Test-3.docx"
-    #filename = "2023-01-TIC1-Test-4.docx"
-    filename = "2023-01-TIC1-Test-6.docx"
+    file_name_begin="2024-01-S2-"
+    filename = file_name_begin+"Test-1.docx"
+    #filename = file_name_begin+"Test-2.docx"
+    #filename = file_name_begin+"Test-3.docx"
+    #filename = file_name_begin+"Test-4.docx"
+    filename = file_name_begin+"Test-5.docx"
+    #filename = file_name_begin+"Test-6.docx"
+    filename = file_name_begin + "Test-8.docx"
+    #filename = file_name_begin + "Test-9.docx"
+    filename = file_name_begin + "Test-10.docx"
+
     from student import Student
     stud = Student()
     stud.name="Test"
@@ -586,8 +618,9 @@ if __name__ == "__main__":
     filename = path+'/'+filename
     print(filename)
     # Créer une instance de l'application Word
-    word_app = win32com.client.Dispatch("Word.Application")
 
+    word_app = win32com.client.Dispatch("Word.Application")
+    print("ok, word_app created")
 
     command_executed=False
     error=False
@@ -605,19 +638,26 @@ if __name__ == "__main__":
                 messagebox.showinfo(title="Script de correction automatique",
                                     message="Fermer le document " + file + " pour la nouvelle correction")
                 error=True
+        else :
+            print("file don't exist", file)
+            exit(2)
+
     # Ouvrir le document
     try:
         document = word_app.Documents.Open(filename)
     except Exception as e :
         print("erreur dans l'ouverture du document"+str(e))
 
+    time.sleep(0.1)
+    print("ok, Document open")
 
     add_word_macro(document)
     #
     #check_hyperlinks(word_app, stud, debug=True)
 
-    #check_header(word_app, stud, key="piedDePage", debug=True)
-    #check_header_and_footer(word_app, stud, middle_text_asked="Examen TICE – B1", key="piedDePage", debug=True)
-    check_tables(word_app, stud, key="tableau", debug=debug)
+    #check_header(word_app, stud, "S2", key="piedDePage", debug=True)
+    group = check_header_and_footer(word_app, stud, header_to_check, middle_text_asked=middle_footer_to_check, key="piedDePage", debug=True)
+    print("group found : ", group)
+    #check_tables(word_app, stud, key="tableau", debug=debug)
     document.Close(True)
     word_app.Quit()
