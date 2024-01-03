@@ -22,6 +22,7 @@ import openpyxl
 from openpyxl.comments import Comment
 from openpyxl.utils.cell import get_column_letter
 from openpyxl.styles import PatternFill
+from openpyxl.styles import Font
 
 from student import Student
 
@@ -41,9 +42,6 @@ excel_file_for_results = "./2024-01-auto-correct-results.xlsx"
 # todo : orthographe
 # todo : citation
 # todo : note bas de page
-
-# todo : mettre titres en gras dans fichier excel
-# todo pour dans beaucoup plus tard : figer titres et noms
 
 def execute_ensuring_file_not_open(file, command):
     command_executed = False
@@ -66,30 +64,41 @@ def execute_ensuring_file_not_open(file, command):
 def fill_first_lines_excel(worksheet, student):
     row = 1
     worksheet.cell(row=row, column=1).value = "Nom"
+    worksheet.cell(row=row, column=1).font = Font(bold=True)
     worksheet.cell(row=row, column=2).value = "Prénom"
+    worksheet.cell(row=row, column=2).font = Font(bold=True)
     worksheet.cell(row=row, column=3).value = "Total"
+    worksheet.cell(row=row, column=3).font = Font(bold=True)
     col = 4
     for key in student.scores.keys():
         worksheet.cell(row=row, column=col).value = key
+        worksheet.cell(row=row, column=col).font = Font(bold=True)
         col += 1
     worksheet.cell(row=row, column=col).value = "à vérifier manuellement"
+    worksheet.cell(row=row, column=col).font = Font(bold=True)
     col = 4
     row += 1
     for key, value in student.max_points.items():
         worksheet.cell(row=row, column=col).value = key
+        worksheet.cell(row=row, column=col).font = Font(bold=True)
+        worksheet.cell(row=row, column=col).font = Font(italic=True)
         col += 1
     row += 1
     col = 4
     for key, value in student.max_points.items():
         worksheet.cell(row=row, column=col).value = value
+        worksheet.cell(row=row, column=col).font = Font(bold=True)
         col += 1
     worksheet.cell(row=row, column=3).value = "=sum(" + \
                                               get_column_letter(4) + str(row) + \
                                               ":" + get_column_letter(4 + len(student.scores.items())) + \
                                               str(row) + ")"
 
+    worksheet.cell(row=row, column=col).font = Font(bold=True)
+
     row += 1
 
+    worksheet.freeze_panes = 'D4'
     # col += 2
     # for key in reasons_set:
     #     worksheet.cell(row=1, column=col).value = key
