@@ -649,6 +649,16 @@ def verifDocumentWord(filename, word, student, total_pages):
         sys.stderr.write("vérifier listes a planté" + str(e))
     max += student.max_points[key]
 
+    key = "tableau"
+    # check table
+    try:
+        check_tables(py_win32_word_app, student, key, True)
+    except Exception as e:
+        to_check_manually += key + " a crashé."
+        student.to_check.add(key)
+        sys.stderr.write("vérifier "+key+" a planté" + str(e))
+    max += student.max_points[key]
+
     # check images
     key = "images"
     try:

@@ -12,6 +12,21 @@ remove_non_english = lambda s: re.sub(r'[^a-zA-Z0-9]', '', s)
 def define_macros():
     macros=[]
     macros.append("""
+Function HasTable() As Boolean
+    Dim doc As Document
+    Dim tbl As Table
+
+    ' Reference to the active document
+    Set doc = ActiveDocument
+
+    ' Check if there is at least one table in the document
+    If doc.Tables.Count > 0 Then
+        HasTable = True
+    Else
+        HasTable = False
+    End If
+End Function""")
+    macros.append("""
 Function GetFooterText() As String
     Dim footerText As String
     Dim numSections As Integer
@@ -496,6 +511,32 @@ def check_hyperlinks(word_app, student, key = "lien", debug=False):
         student.to_check.add(key)
     print_debug(debug, "fin check_hyperlinks "+ str(links))
     return {}
+def check_tables(word_app, student, key = "tableau", debug=False):
+
+    max_scores = student.max_points[key]
+    why = ""
+    to_check_manually = ""
+    score = 0
+
+    try:
+        table = word_app.Run("HasTable")
+        if table:
+            print_debug(debug, "OK, Tableau présent. ")
+            score=max_scores
+        else :
+            print_debug(debug, "pas de tableau")
+            why += "pas de tableau dans le document. "
+            to_check_manually+="vérifier tableau - "
+    except Exception as e:
+        sys.stderr.write("error in word_macros.py\check_tables " + str(e))
+
+    student.scores[key] = score
+    student.reasons[key] = why
+    student.to_check_manually += to_check_manually
+    if student.scores[key] < student.max_points[key]:
+        student.to_check.add(key)
+    print_debug(debug, "fin check_tables ")
+    return {}
 
 #def add_word_macros_pywin32():
 def add_word_macro(document, debug=False):
@@ -576,6 +617,7 @@ if __name__ == "__main__":
     #check_hyperlinks(word_app, stud, debug=True)
 
     #check_header(word_app, stud, key="piedDePage", debug=True)
-    check_header_and_footer(word_app, stud, middle_text_asked="Examen TICE – B1", key="piedDePage", debug=True)
+    #check_header_and_footer(word_app, stud, middle_text_asked="Examen TICE – B1", key="piedDePage", debug=True)
+    check_tables(word_app, stud, key="tableau", debug=debug)
     document.Close(True)
     word_app.Quit()
