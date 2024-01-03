@@ -565,6 +565,15 @@ def verifDocumentWord(filename, word, student, total_pages):
         sys.stderr.write("vérifier style a planté" + str(e))
         student.to_check.add(key)
 
+    # check Quote
+    key = "citation"
+    try:
+        check_quote(document_pydocx, student, key)
+    except Exception as e:
+        to_check_manually += "citation "
+        sys.stderr.write("vérifier citation a planté" + str(e))
+        student.to_check.add(key)
+
     key = "TDM"
     try:
         verifier_TDM_word(document_pywin32, student)

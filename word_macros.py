@@ -261,6 +261,33 @@ def print_debug(debug, message):
     if debug:
         print(message)
 
+def check_quote(word_app, student, key="citation", debug=False):
+    max_scores = student.max_points[key]
+    why = ""
+    to_check_manually = ""
+    score = 0
+
+    try:
+        table = word_app.Run("HasFrenchQuotesWithFootnote")
+        if table:
+            print_debug(debug, "OK, citation présente. ")
+            score = max_scores
+        else:
+            print_debug(debug, "pas de citation")
+            why += "pas de citation trouvée dans le document. "
+            to_check_manually += "vérifier citation. "
+    except Exception as e:
+        sys.stderr.write("error in word_macros.py\check_quote " + str(e))
+
+    student.scores[key] = score
+    student.reasons[key] = why
+    student.to_check_manually += to_check_manually
+    #if student.scores[key] < student.max_points[key]:
+    #    student.to_check.add(key)
+    #print_debug(debug, "fin check_tables ")
+    return {}
+
+
 def check_footer_left_text(student, complete_footer, left_footer, max_score, debug=False):
     score = 0
     why = ""
@@ -383,7 +410,7 @@ def get_footer_parts(complete_footer, debug):
 
     else:
         print_debug(debug, "not separable footer")
-    return(left_footer, middle_footer)
+    return left_footer, middle_footer
 
 def check_right_header(word_app, header_to_check, max_score, debug=False):
     # TODO : how to be OK if the position come from 1 or 2 tabs ?
@@ -404,14 +431,9 @@ def check_right_header(word_app, header_to_check, max_score, debug=False):
 
     except Exception as e:
         sys.stderr.write("error in word_macros.py\check_header " + str(e))
-
-    student.scores[key] = score
-    student.reasons[key] = why
-    student.to_check_manually += to_check_manually
-    if student.scores[key] < student.max_points[key]:
-        student.to_check.add(key)
     print_debug(debug, "fin check_header ")
-    return {}
+    return (score, why, to_check_manually, group)
+
 def check_header(word_app, header_to_check, max_score, debug=False):
     # TODO : adapter les points et le texte des en-têtes (généraliser ?)
     why = ""
@@ -659,5 +681,6 @@ if __name__ == "__main__":
     group = check_header_and_footer(word_app, stud, header_to_check, middle_text_asked=middle_footer_to_check, key="piedDePage", debug=True)
     print("group found : ", group)
     #check_tables(word_app, stud, key="tableau", debug=debug)
+    check_quote(word_app, stud, key="citation", debug=debug)
     document.Close(True)
     word_app.Quit()
