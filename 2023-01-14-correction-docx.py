@@ -539,7 +539,6 @@ def verifDocumentWord(filename, word, student, total_pages):
 
     fw = filename[0:-4] + ".docx"
     print("Fichier Word ; ", os.path.abspath(fw))
-    print("filename = ", fw)
     try:
         document_pywin32 = word.Documents.Open(os.path.abspath(fw))
     except Exception as e:
@@ -605,7 +604,7 @@ def verifDocumentWord(filename, word, student, total_pages):
     try:
         # 2023 - group = check_header_and_footer(py_win32_word_app, student, middle_text_asked="Examen TICE – B1", key="piedDePage")
         group = check_header_and_footer(py_win32_word_app, student, header_to_check, middle_text_asked=middle_footer_to_check, key="piedDePage")
-        print("Groupe : ", group)
+        print_debug(debug, "Groupe : "+group)
 
         to_check_manually += to_check
     except Exception as e:
