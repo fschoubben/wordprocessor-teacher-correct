@@ -7,6 +7,8 @@ debug = True
 
 header_to_check="S2"
 middle_footer_to_check="S2-B1 - Numérique"
+excel_file_for_results = "./2024-01-auto-correct-results.xlsx"
+default_start_of_filename = "2024-01-S2-"
 # import re
 
 import PyPDF2
@@ -26,8 +28,8 @@ from openpyxl.styles import Font
 
 from student import Student
 
-excel_file_for_results = "./2024-01-auto-correct-results.xlsx"
 
+# TODO : Check if check_table works (seems to give 2 points when no file exists !?
 # TODO  everything in english
 # TODO  Later : internationalisation
 
@@ -117,6 +119,8 @@ def fill_result_line_in_excel(worksheet, row, student):
     # print("à vérifier : ", student.to_check)
     # print("sytles : ", student.scores["styles"], "et liens : ", student.scores["lien"])
     # TODO add conditional formatting : https://openpyxl.readthedocs.io/en/latest/formatting.html
+    #        --> < max_score/2 --> red font color
+    #        --> = max_score   --> green font color
     # Todo add formulas : https://openpyxl.readthedocs.io/en/latest/usage.html?highlight=formula#using-formulae
     for key, value in student.scores.items():
         worksheet.cell(row=row, column=col).value = value
@@ -519,12 +523,12 @@ def generepar(f):
                 else:
                     return (info.producer)
             else:
-                return ("unknown")
+                return ("Unknown")
     except Exception as e:
         print('problème avec pdf dans generepar', e)
         # verifier_images_redimensionnees_correctement_PDF(file, pdf, 4)
     finally:
-        return ("unknown")
+        return ("Unknown")
 
 
 def verifDocumentWord(filename, word, student, total_pages):
@@ -535,6 +539,7 @@ def verifDocumentWord(filename, word, student, total_pages):
 
     fw = filename[0:-4] + ".docx"
     print("Fichier Word ; ", os.path.abspath(fw))
+    print("filename = ", fw)
     try:
         document_pywin32 = word.Documents.Open(os.path.abspath(fw))
     except Exception as e:
@@ -602,25 +607,14 @@ def verifDocumentWord(filename, word, student, total_pages):
         group = check_header_and_footer(py_win32_word_app, student, header_to_check, middle_text_asked=middle_footer_to_check, key="piedDePage")
         print("Groupe : ", group)
 
-        #check_header_and_footer(py_win32_word_app, student, middle_text_asked=middle_footer_to_check, key="piedDePage")
-        #group = verifier_entetes_pieds_de_page_word(document_pydocx, student)
         to_check_manually += to_check
     except Exception as e:
         to_check_manually += "en-tête/pieds de page a planté. "
         student.to_check.add(key)
         sys.stderr.write("vérifier en-tête/pieds de page a planté" + str(e))
+    student.group = group
     max += student.max_points[key]
 
-    key="numEtNbrPages"
-    try:
-        print(filename)
-        group = check_Page_num_and_tot_word(py_win32_word_app, student)
-        to_check_manually += to_check
-    except Exception as e:
-        to_check_manually += "numéro et nombre de page a planté. "
-        student.to_check.add(key)
-        sys.stderr.write("vérifier numéro et nombre de page a planté" + str(e))
-    max += 4
 
     # check return and spaces
     key="espaces"
@@ -734,107 +728,99 @@ def check_pdf_file(f, student):
 # except:
 #     print("pyxl  Workbook not open")
 ##################################       #########################################
+def create_xls_sheets(groups):
+    # Créer un nouveau tableur
+    workbook = openpyxl.Workbook()
+    # Créer une nouvelle feuille par groupe
+    worksheets={}
+    first_empty_row={}
+    # rows={}
+    for group in groups:
+        worksheet = workbook.create_sheet(group)
+        worksheets[group]=worksheet
+        first_empty_row[group] = fill_first_lines_excel(worksheet, stud)
+       # row[group] = first_empty_row[group]
+    #if "Unknown" not in groups:
+    #        worksheets.append(workbook.create_sheet("Unknown"))
+    workbook.remove(workbook["Sheet"])
+    return workbook, worksheets, first_empty_row
 
-# Créer un nouveau tableur
-workbook = openpyxl.Workbook()
+def save_in_excel_file(students, groups):
+    (workbook,worksheets, first_empty_rows) = create_xls_sheets(groups)
+    rows = dict(first_empty_rows)
+    for student in students:
+        fill_result_line_in_excel(worksheets[student.group], rows[student.group], student)
+        rows[student.group] += 1
+    for key in groups:
+        fill_last_line_in_excel(worksheets[key], rows[key], student, first_empty_rows[key] - 1)
 
-# Créer une nouvelle feuille par groupe
-worksheet_PS = workbook.create_sheet("PS")
-worksheet_NP = workbook.create_sheet("NP")
-worksheet_unknown = workbook.create_sheet("unknown")
-workbook.remove(workbook["Sheet"])
+    # Enregistrer le tableur
+    execute_ensuring_file_not_open(excel_file_for_results, workbook.save)
 
-stud = Student()
 
-first_empty_row = fill_first_lines_excel(worksheet_NP, stud)
-fill_first_lines_excel(worksheet_PS, stud)
-fill_first_lines_excel(worksheet_unknown, stud)
 
-row_NP = first_empty_row
-row_PS = first_empty_row
-row_unknown = first_empty_row
+if __name__ == "__main__":
 
-py_win32_word_app = win32com.client.Dispatch("Word.Application")
-
-# on prends la liste des fichiers PDF
-(listefichiers, lf) = listerFichiers(".", ".pdf")
-# print(listefichiers)
-for f in lf:
     stud = Student()
+    groups=["Unknown"]
 
-    max = 0
-    group = "unknown"
+    py_win32_word_app = win32com.client.Dispatch("Word.Application")
 
-    # check filename
-    # voir par quoi c'est généré : Word ou LibO
-    # nom fichier :  2023-01-TIC1—Nom- /2
-    verifier_nom_fichiers(f, "2024-01-S2-", stud)
-    max += 2
+    # on prends la liste des fichiers PDF
+    (listefichiers, lf) = listerFichiers(".", ".pdf")
+    # print(listefichiers)
+    students=[]
+    for f in lf:
+        stud = Student()
 
-    # check 2 formats
-    verifier_deux_formats_fichiers(f, listefichiers, 2, stud.scores, stud.reasons)
-    max += 2
+        max = 0
+        group = "Unknown"
 
-    # check number of pages
-    # (points["pages"], raisons["pages"]) = verifier_nombre_pages_PDF(f, 3, 10, 2)
-    # max+=2
-    try:
-        (m, to_check, tot_pages) = check_pdf_file(f, stud)
-    except Exception as e:
-        print("problème dans le check_pdf_file : No pdf file ? ")
-    max += m
-    stud.to_check_manually += to_check
-    generateur = generepar(f)
+        # check filename
+        # voir par quoi c'est généré : Word ou LibO
+        # nom fichier :  2023-01-TIC1—Nom- /2
+        verifier_nom_fichiers(f, default_start_of_filename, stud)
+        max += 2
+        # check 2 formats
+        verifier_deux_formats_fichiers(f, listefichiers, 2, stud.scores, stud.reasons)
+        max += 2
 
-    # check according to OS
-    if generateur == "Word":
-        (maxPoints, group, to_check) = verifDocumentWord(f, py_win32_word_app, stud, tot_pages)
-        stud.to_check_manually += to_check
-        max += maxPoints
-    elif generateur == "LibreOffice":
-        print("Fichier LibreOffice")
-    else:
+        # check number of pages
+        # (points["pages"], raisons["pages"]) = verifier_nombre_pages_PDF(f, 3, 10, 2)
+        # max+=2
         try:
+            (m, to_check, tot_pages) = check_pdf_file(f, stud)
+        except Exception as e:
+            print("problème dans le check_pdf_file : No pdf file ? ")
+        max += m
+        stud.to_check_manually += to_check
+        generateur = generepar(f)
+
+        # check according to OS
+        if generateur == "Word":
             (maxPoints, group, to_check) = verifDocumentWord(f, py_win32_word_app, stud, tot_pages)
             stud.to_check_manually += to_check
             max += maxPoints
-        except Exception as e:
-            sys.stderr.write("ce n'est pas un document Word :-( " + str(e))
+        elif generateur == "LibreOffice":
+            print("Fichier LibreOffice")
+        else:
+            try:
+                (maxPoints, group, to_check) = verifDocumentWord(f, py_win32_word_app, stud, tot_pages)
+                stud.to_check_manually += to_check
+                max += maxPoints
+            except Exception as e:
+                sys.stderr.write("ce n'est pas un document Word :-( " + str(e))
 
-    print(stud.firstname, " ", stud.name, " ", group, " : ", str(sum(stud.scores.values())), "sur ", max)
-    if group == "NP":
-        fill_result_line_in_excel(worksheet_NP, row_NP, stud)
-        row_NP += 1
-    elif group == "PS":
-        fill_result_line_in_excel(worksheet_PS, row_PS, stud)
-        row_PS += 1
-    else:
-        fill_result_line_in_excel(worksheet_unknown, row_unknown, stud)
-        row_unknown += 1
-    # print(points)
-    # print(raisons)
-    print("========================================")
-    # time.sleep(5)
-fill_last_line_in_excel(worksheet_PS, row_PS, stud, first_empty_row - 1)
-fill_last_line_in_excel(worksheet_NP, row_NP, stud, first_empty_row - 1)
-fill_last_line_in_excel(worksheet_unknown, row_unknown, stud, first_empty_row - 1)
-py_win32_word_app.Quit()
+        print(stud.firstname, " ", stud.name, " ", group, " : ", str(sum(stud.scores.values())), "sur ", max)
+        print("========================================")
+        students.append(stud)
+        if group not in groups:
+            groups.append(group)
+        print_debug(debug, str(groups))
+        # time.sleep(5)
+    py_win32_word_app.Quit()
 
-# Enregistrer le tableur
-execute_ensuring_file_not_open(excel_file_for_results, workbook.save)
+    # generate xlsx results file
+    save_in_excel_file(students, groups)
 
-
-# excel_file_saved = False
-# while not excel_file_saved:
-#     if os.path.exists(excel_file_for_results):
-#         try:
-#             os.rename(excel_file_for_results, excel_file_for_results)
-#             print_debug(debug, 'Access on file "' + excel_file_for_results +'" is available!')
-#             workbook.save(excel_file_for_results)
-#             excel_file_saved = True
-#         except OSError as e:
-#             print('Access-error on file "' + excel_file_for_results + '"! \n' + str(e))
-#             messagebox.showinfo(title="Script de correction automatique", message="Fermer le document Excel pour la nouvelle correction")
-#workbook.save(excel_file_for_results)
-
-print("done")
+    print("done")

@@ -416,7 +416,7 @@ def check_right_header(word_app, header_to_check, max_score, debug=False):
     # TODO : how to be OK if the position come from 1 or 2 tabs ?
     why = ""
     to_check_manually = ""
-    group = "unknown"
+    group = "Unknown"
     score = 0
 
     try:
@@ -438,7 +438,7 @@ def check_header(word_app, header_to_check, max_score, debug=False):
     # TODO : adapter les points et le texte des en-têtes (généraliser ?)
     why = ""
     to_check_manually = ""
-    group = "unknown"
+    group = "Unknown"
     score = 0
 
     try:
@@ -453,7 +453,7 @@ def check_header(word_app, header_to_check, max_score, debug=False):
             why += "Pas de section écrite correctement en en-tête. "
             print_debug(debug, "Pas de section écrite correctement en en-tête."+header_text)
 
-            group = "unknown"
+            group = "Unknown"
 
 
     except Exception as e:
