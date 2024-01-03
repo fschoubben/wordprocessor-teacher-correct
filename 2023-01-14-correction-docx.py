@@ -3,14 +3,6 @@ import os
 import psutil
 from tkinter import messagebox
 
-debug = True
-
-header_to_check="S2"
-middle_footer_to_check="S2-B1 - Numérique"
-excel_file_for_results = "./2024-01-auto-correct-results.xlsx"
-default_start_of_filename = "2024-01-S2-"
-# import re
-
 import PyPDF2
 from word_macros import *
 from word_functions import *
@@ -28,6 +20,12 @@ from openpyxl.styles import Font
 
 from student import Student
 
+debug = True
+
+header_to_check="S2"
+middle_footer_to_check="S2-B1 - Numérique"
+excel_file_for_results = "./2024-01-auto-correct-results.xlsx"
+default_start_of_filename = "2024-01-S2-"
 
 # TODO : Check if check_table works (seems to give 2 points when no file exists !?
 # TODO  everything in english
@@ -543,8 +541,6 @@ def verifDocumentWord(filename, word, student, total_pages):
         document_pywin32 = word.Documents.Open(os.path.abspath(fw))
     except Exception as e:
         sys.stderr.write("pas de fichier Word ? " + str(e))
-        for el in e:
-            print(el)
         to_check_manually += "vérifier présence fichier docx ! "
         student.to_check.add(key)
         return (max, group, to_check_manually)
@@ -787,6 +783,9 @@ if __name__ == "__main__":
         # check number of pages
         # (points["pages"], raisons["pages"]) = verifier_nombre_pages_PDF(f, 3, 10, 2)
         # max+=2
+        m=0
+        tot_pages=0
+        to_check=""
         try:
             (m, to_check, tot_pages) = check_pdf_file(f, stud)
         except Exception as e:
