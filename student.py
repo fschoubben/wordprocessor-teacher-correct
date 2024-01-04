@@ -4,17 +4,16 @@ class Student:
                   "tableau": 2,  "citation": 2, "noteBasPage": 2, "lien": 2, "images": 4}
 
     def reset(self):
-        self.scores = {"format": 0, "nomFichiers": 0, "poids": 0, "orthographe": 0, "pages": 0,
-                       "styles": 0, "piedDePage": 0, "espaces": 0, "TDM": 0, "section": 0, "listes": 0,
-                       "tableau": 2,  "citation": 0, "noteBasPage": 0, "lien": 0, "images": 0 }
-        self.reasons = {"format": "", "nomFichiers": "", "poids": "", "orthographe": "", "pages": "",
-                        "styles": "", "piedDePage": "", "espaces": "", "TDM": "", "section": "", "listes": "",
-                        "tableau": "", "citation": "", "noteBasPage": "", "lien": "", "images": ""}
         self.name = ""
         self.firstname = ""
         self.group = "Unknown"
         self.to_check_manually = ""
         self.to_check = set()
+        self.scores = {}
+        self.reasons = {}
+        for key in self.max_points:
+            self.scores[key] = 0
+            self.reasons[key] = ""
 
     def __init__(self):
         self.reset()
