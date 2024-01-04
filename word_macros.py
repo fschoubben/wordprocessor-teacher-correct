@@ -14,6 +14,194 @@ remove_non_english = lambda s: re.sub(r'[^a-zA-Z0-9]', '', s)
 ### Macro's Definition
 def define_macros():
     macros=[]
+    # TODO : remove non used macros
+    # TODO : refactor pictures macros :
+    #   --> parse Shapes for text on left
+    #   --> set all Shapes inlines
+    #   --> check for legends
+    #   --> check for Image ratio
+
+    macros.append("""
+Function GetAllPicturesName() As String
+    Dim Shp As Shape, iShp As InlineShape
+    Dim IShapeRange As Range
+    Dim StrShp As String, StriShp As String
+    Dim pictureNames As String
+    Dim sep As String
+    sep_inside = "<->"
+    sep_objects = "##"
+    For Each Shp In ActiveDocument.Shapes
+         If Shp.Type = msoPicture Then
+            Shp.ConvertToInlineShape
+        End If 
+    Next
+    
+    For X = 1 To ActiveDocument.InlineShapes.Count
+        If ActiveDocument.InlineShapes(X).Type = wdInlineShapePicture Then
+            Set myShp = ActiveDocument.InlineShapes(X)
+            StriShp = StriShp & sep_inside & myShp.AlternativeText
+            pictureNames = pictureNames & sep_objects & myShp.AlternativeText & sep_inside & myShp.Title 
+            'vbCrLf
+        End If
+    Next X   
+  GetAllPicturesName = pictureNames
+End Function""")
+    macros.append("""
+Function GetPictureNames() As String
+    Dim pic As InlineShape
+    Dim shp As Shape
+    Dim pictureNames As String
+    Dim sep As String
+    
+    ' Initialize the list
+    pictureNames = ""
+    sep="<->"
+    
+    ' Get names of InlineShapes
+    For Each pic In ActiveDocument.InlineShapes
+        pictureNames = pictureNames & pic.Title & sep
+    Next pic
+    
+    ' Get names of Shapes (including pictures)
+    For Each shp In ActiveDocument.Shapes
+        If shp.Type = msoPicture Then
+            pictureNames = pictureNames & shp.Title & sep
+            'vbCrLf
+        End If
+    Next shp
+    
+    ' Return the list of names
+    GetPictureNames = pictureNames
+End Function""")
+    macros.append("""
+Function CountAllPictures() As Long
+    Dim pic As InlineShape
+    Dim shp As Shape
+    Dim pictureCount As Long
+    
+    ' Initialize the count
+    pictureCount = 0
+    
+    ' Count InlineShapes
+    pictureCount = ActiveDocument.InlineShapes.Count
+    
+    ' Count Shapes (including pictures)
+    For Each shp In ActiveDocument.Shapes
+        pictureCount = pictureCount + 1
+    Next shp
+    
+    ' Return the total count
+    CountAllPictures = pictureCount
+End Function""")
+    macros.append("""
+Function PictureHasNearbyTextBox(pic As InlineShape) As Boolean
+    Dim textBox As Shape
+    Dim distanceThreshold As Single
+    Dim picLeft, picTop, picRight, picBottom As Single
+    
+    ' Set the distance threshold (adjust as needed)
+    distanceThreshold = 20  ' You may need to adjust this value based on your document layout
+    
+    ' Get the coordinates of the picture
+    picLeft = pic.Range.Information(wdHorizontalPositionRelativeToPage)
+    picTop = pic.Range.Information(wdVerticalPositionRelativeToPage)
+    picRight = picLeft + pic.Width
+    picBottom = picTop + pic.Height
+    
+    ' Check for nearby text boxes
+    For Each textBox In ActiveDocument.Shapes
+        If textBox.Type = msoTextBox Then
+            ' Check if the text box is near the picture
+            If (Abs(textBox.Left - picRight) < distanceThreshold Or Abs(picLeft - textBox.Left) < distanceThreshold) And _
+               (Abs(textBox.Top - picBottom) < distanceThreshold Or Abs(picTop - textBox.Top) < distanceThreshold) Then
+                PictureHasNearbyTextBox = True
+                Exit Function
+            End If
+        End If
+    Next textBox
+    
+    ' No nearby text box found
+    PictureHasNearbyTextBox = False
+End Function
+
+Sub CheckPicturesForNearbyTextBoxes()
+    Dim pic As InlineShape
+    Dim hasNearbyTextBox As Boolean
+    
+    ' Assume no nearby text boxes until proven otherwise
+    hasNearbyTextBox = False
+    
+    ' Iterate through all inline shapes in the document
+    For Each pic In ActiveDocument.InlineShapes
+        ' Check if the picture has a nearby text box
+        If PictureHasNearbyTextBox(pic) Then
+            hasNearbyTextBox = True
+            Exit For
+        End If
+    Next pic
+    
+    ' Display the result
+    If hasNearbyTextBox Then
+        MsgBox "At least one picture has a nearby text box.", vbInformation
+    Else
+        MsgBox "No picture has a nearby text box.", vbExclamation
+    End If
+End Sub""")
+    macros.append("""
+Function PictureHasLegend(pic As InlineShape) As Boolean
+    ' Check if the picture has a legend (caption)
+    On Error Resume Next
+    If Not pic.Caption Is Nothing Then
+        PictureHasLegend = True
+    Else
+        PictureHasLegend = False
+    End If
+    On Error GoTo 0
+End Function
+
+Function CheckPicturesForLegends() As Boolean
+    Dim pic As InlineShape
+    Dim hasLegend As Boolean
+    
+    ' Assume no legends until proven otherwise
+    hasLegend = False
+    
+    ' Iterate through all inline shapes in the document
+    For Each pic In ActiveDocument.InlineShapes
+        ' Check if the picture has a legend
+        If PictureHasLegend(pic) Then
+            hasLegend = True
+            Exit For
+        End If
+    Next pic
+    
+    ' Return the result
+    CheckPicturesForLegends = hasLegend
+End Function""")
+    macros.append("""
+Function CheckPictureProportions() As Boolean
+    Dim shape As shape
+    Dim allProportionsMaintained As Boolean
+    
+    ' Assume all proportions are maintained until proven otherwise
+    allProportionsMaintained = True
+    
+    ' Iterate through all shapes in the document
+    For Each shape In ActiveDocument.Shapes
+        ' Check if the shape is an inline shape and has an associated picture
+        If shape.Type = msoPicture Then
+            ' Check if the picture maintains its original proportions
+            If shape.LockAspectRatio = msoFalse Then
+                ' The picture does not maintain its original proportions
+                allProportionsMaintained = False
+                Exit For
+            End If
+        End If
+    Next shape
+    
+    ' Return the result
+    CheckPictureProportions = allProportionsMaintained
+End Function""")
     macros.append("""
 Function HasTable() As Boolean
     Dim doc As Document
@@ -261,6 +449,61 @@ def print_debug(debug, message):
     if debug:
         print(message)
 
+
+def get_pictures_names(word_app, debug):
+    image_names = ""
+    try:
+        image_names = word_app.Run("GetAllPicturesName")
+    except Exception as e:
+        sys.stderr.write("error in word_macros.py\count_pictures " + str(e))
+    return image_names
+def check_legend(word_app, student, key="images", debug=False):
+    max_scores = student.max_points[key]
+    why = ""
+    to_check_manually = ""
+    score = 0
+    print_debug(debug, "check legends : let's go")
+
+    try:
+        image_legend = word_app.Run("CheckPicturesForLegends")
+        if not image_legend:
+            image_legend = word_app.Run("CheckPicturesForNearbyTextBoxes")
+        if image_legend:
+            print_debug(debug, "OK, légende présente. ")
+            score = max_scores/4
+        else:
+            print_debug(debug, "problème de légende ")
+            why += "pas de légende sur une image. "
+            to_check_manually += "vérifier légendes images. "
+    except Exception as e:
+        sys.stderr.write("error in word_macros.py\check_legend " + str(e))
+
+    student.scores[key] = score
+    student.reasons[key] = why
+    student.to_check_manually += to_check_manually
+def check_image(word_app, student, key="images", debug=False):
+    # TODO don't seems to be ok, cf Test 8
+    max_scores = student.max_points[key]
+    why = ""
+    to_check_manually = ""
+    score = 0
+    print_debug(debug, "check images : let's go")
+
+    try:
+        image_proportions = word_app.Run("CheckPictureProportions")
+        if image_proportions:
+            print_debug(debug, "OK, Proportions gardées. ")
+            score = max_scores/4
+        else:
+            print_debug(debug, "problème de proportions ")
+            why += "image aux proportions non gardées dans le document. "
+            to_check_manually += "vérifier proportions images. "
+    except Exception as e:
+        sys.stderr.write("error in word_macros.py\check_image " + str(e))
+
+    student.scores[key] = score
+    student.reasons[key] = why
+    student.to_check_manually += to_check_manually
 def check_quote(word_app, student, key="citation", debug=False):
     max_scores = student.max_points[key]
     why = ""
@@ -537,7 +780,7 @@ def check_hyperlinks(word_app, student, key = "lien", debug=False):
         elif score == max_scores:
             print_debug(debug, "Tout va bien dans les hyperliens")
         else:
-            print_debug("choses étrange dans check_hyperlink")
+            print_debug(debug, "choses étrange dans check_hyperlink")
     except Exception as e:
         sys.stderr.write("error in page number and page total word_macros.py\check_hyperlinks " + str(e))
 
@@ -597,10 +840,11 @@ def add_word_macro(document, debug=False):
     # Fermer l'application Word
     #word_app.Quit()
 
-def close_word():
+def close_word(debug):
     try:
         # Create a Word application object
         word_app = win32com.client.Dispatch("Word.Application")
+        # quit without saving
         word_app.Quit(SaveChanges=0)
 
         print_debug(debug, "Word closed successfully")
@@ -609,19 +853,19 @@ def close_word():
         print(f"Error: {e}")
 
 if __name__ == "__main__":
-    close_word()
-    global debug
-    debug = True
+    debugging = True
+    close_word(debugging)
     file_name_begin="2024-01-S2-"
-    filename = file_name_begin+"Test-1.docx"
-    #filename = file_name_begin+"Test-2.docx"
-    #filename = file_name_begin+"Test-3.docx"
-    #filename = file_name_begin+"Test-4.docx"
-    filename = file_name_begin+"Test-5.docx"
-    #filename = file_name_begin+"Test-6.docx"
-    filename = file_name_begin + "Test-8.docx"
-    #filename = file_name_begin + "Test-9.docx"
-    filename = file_name_begin + "Test-10.docx"
+    file_name = file_name_begin+"Test-1.docx"
+    #file_name = file_name_begin+"Test-2.docx"
+    #file_name = file_name_begin+"Test-3.docx"
+    #file_name = file_name_begin+"Test-4.docx"
+    file_name = file_name_begin+"Test-5.docx"
+    #file_name = file_name_begin+"Test-6.docx"
+    file_name = file_name_begin + "Test-8.docx"
+    file_name = file_name_begin + "Test-9.docx"
+    #file_name = file_name_begin + "Test-10.docx"
+    #file_name = "2024-01-S2-Arens-Hélène-traitement-de-texte.docx"
 
     from student import Student
     stud = Student()
@@ -634,11 +878,11 @@ if __name__ == "__main__":
 
     #document = word_app.Documents.Open(document_path)
 
-    print(filename)
-    file=filename
+    print(file_name)
+    file=file_name
     path = os.getcwd()
-    filename = path+'/'+filename
-    print(filename)
+    file_name = path+'/'+file_name
+    print(file_name)
     # Créer une instance de l'application Word
 
     word_app = win32com.client.Dispatch("Word.Application")
@@ -650,7 +894,7 @@ if __name__ == "__main__":
         if os.path.exists(file):
             try:
                 os.rename(file, file)
-                print_debug(debug, 'Access on file "' + file + '" is available!')
+                print_debug(debugging, 'Access on file "' + file + '" is available!')
                 time.sleep(1)
                 if error:
                     word_app = win32com.client.Dispatch("Word.Application")
@@ -666,21 +910,31 @@ if __name__ == "__main__":
 
     # Ouvrir le document
     try:
-        document = word_app.Documents.Open(filename)
+        document = word_app.Documents.Open(file_name)
     except Exception as e :
         print("erreur dans l'ouverture du document"+str(e))
+        quit(2)
 
     time.sleep(0.1)
     print("ok, Document open")
 
     add_word_macro(document)
+    print_debug(debugging, "macros added : OK")
     #
     #check_hyperlinks(word_app, stud, debug=True)
 
     #check_header(word_app, stud, "S2", key="piedDePage", debug=True)
-    group = check_header_and_footer(word_app, stud, header_to_check, middle_text_asked=middle_footer_to_check, key="piedDePage", debug=True)
-    print("group found : ", group)
+    #group = check_header_and_footer(word_app, stud, header_to_check, middle_text_asked=middle_footer_to_check, key="piedDePage", debug=True)
+    #print("group found : ", group)
     #check_tables(word_app, stud, key="tableau", debug=debug)
-    check_quote(word_app, stud, key="citation", debug=debug)
+    #check_quote(word_app, stud, key="citation", debug=debug)
+    #TODO check_image(word_app, stud, key="images", debug=debugging)
+    #check_legend(word_app, stud, key="images", debug=debugging)
+    pictures = get_pictures_names(word_app, debug=debugging)
+    list_pictures = pictures.split('##')
+    print_debug(debugging,  "pictures : "+ pictures)
+    for el in list_pictures:
+        print(el)
+    print_debug(debugging, str(len(list_pictures)))
     document.Close(True)
-    word_app.Quit()
+    word_app.Quit(SaveChanges=0)

@@ -1,5 +1,8 @@
 import os
 from docx import Document
+from PIL import Image
+import io
+import math
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 
 def check_sections_word(doc, student, key="section"):
@@ -50,7 +53,32 @@ def has_quote(para, debug=False):
             return True
     return False
 
+def check_picture_proportions(doc):
+    all_proportions_maintained = True
 
+    for paragraph in doc.paragraphs:
+        for run in paragraph.runs:
+            if run._element.xml.startswith('<w:drawing'):
+                shape = run._element
+                if shape.type == 3:  # Picture shape type
+                    aspect_ratio = get_aspect_ratio(shape)
+                    if not math.isclose(aspect_ratio, 1.0, rel_tol=1e-5):  # Assuming original aspect ratio is 1:1
+                        all_proportions_maintained = False
+                        break
+
+    return all_proportions_maintained
+
+def get_aspect_ratio(shape):
+    blip = shape.xpath('.//a:blip', namespaces=shape.nsmap)
+    if blip:
+        embed = blip[0].get("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed")
+        rel = shape.part.rels.get(embed)
+        if rel:
+            image = rel.target_part.blob
+            width, height = Image.open(io.BytesIO(image)).size
+            return width / height
+
+    return 1.0  # Default aspect ratio if unable to retrieve
 def print_debug(debug, message):
     if debug:
         print(message)
@@ -58,7 +86,7 @@ def print_debug(debug, message):
 if __name__ == "__main__":
     #filename = "2023-01-TIC1-Test-1.docx"
     #filename = "2023-01-TIC1-Test-2.docx"
-    filename = "2024-01-S2-Test-10.docx"
+    filename = "2024-01-S2-Test-8.docx"
     # TODO : why check_quote don't work with Test 8 ??
     # TODO : rewrite as a macro, there are too much strange things :-(
     # filename = "2024-01-S2-Test-8.docx"
@@ -82,3 +110,8 @@ if __name__ == "__main__":
         print("pas de citation")
     else:
         print("citation OK")
+    proportions_ok = check_picture_proportions(document)
+    if proportions_ok:
+        print("proportions OK")
+    else:
+        print("problème de proportions")
