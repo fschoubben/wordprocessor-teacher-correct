@@ -20,7 +20,112 @@ def define_macros():
     #   --> set all Shapes inlines
     #   --> check for legends
     #   --> check for Image ratio
+    macros.append("""
+Function TestPictures() As String
+    'shapeRange Type doc : https://learn.microsoft.com/en-us/office/vba/api/powerpoint.shaperange.type
+    Dim Shp As Shape, iShp As InlineShape
+    Dim IShapeRange As Range
+    Dim StrShp As String, StriShp As String
+    Dim TestNames As String
+    Dim sep As String
+    sep_inside = "<->"
+    sep_objects = "##"
+    ' ###### convert Shapes to InlineShapes 
+    'For Each Shp In ActiveDocument.Shapes
+    '     If Shp.Type = msoPicture Then
+    '        Shp.ConvertToInlineShape
+    '    End If 
+    'Next
+    TestNames = Str(ActiveDocument.Shapes.Count) & " Shapes found" & vbCrLf & " Alternative Texts : "
+    ' AlternativeText is no use
+    For X = 1 To ActiveDocument.Shapes.Count
+        If ActiveDocument.Shapes(X).Type = msoPicture Then
+            Set myShp = ActiveDocument.Shapes(X)
+            TestNames = TestNames & sep_objects & "picture" & Str(X) & " " & myShp.AlternativeText  
+            'vbCrLf
+        End If
+    Next X   
+    TestNames = TestNames & vbCrLf & " Titles : "
+    For X = 1 To ActiveDocument.Shapes.Count
+        If ActiveDocument.Shapes(X).Type = msoPicture Then
+            Set myShp = ActiveDocument.Shapes(X)
+            TestNames = TestNames & sep_objects &  "picture" & Str(X) & " " & myShp.Title 
+            'vbCrLf
+        End If 
+    Next X   
+    TestNames = TestNames & vbCrLf & " LockAspectRatio : "
+    For X = 1 To ActiveDocument.Shapes.Count
+        If ActiveDocument.Shapes(X).Type = msoPicture Then
+            Set myShp = ActiveDocument.Shapes(X)
+            If myShp.LockAspectRatio = MsoTrue Then
+                TestNames = TestNames & sep_objects &  "picture" & Str(X) & " " & "LockAspectRatio True"
+            Else 
+                TestNames = TestNames & sep_objects & "LockAspectRatio False"
+            End If
 
+            'vbCrLf
+        End If 
+    Next X   
+    'TestName = TestName & vbCrLf & " PictureFormat : "
+    'For X = 1 To ActiveDocument.InlineShapes.Count
+    '    If ActiveDocument.InlineShapes(X).Type = wdInlineShapePicture Then
+    '        Set myShp = ActiveDocument.InlineShapes(X)
+    '        TestNames = pictureNames & sep_objects & myShp.PictureFormat 
+    '        'vbCrLf
+    '    End If 
+    'Next X   
+    'TestName = TestName & vbCrLf & " PictureFormat : "
+    'For X = 1 To ActiveDocument.InlineShapes.Count
+    '    If ActiveDocument.InlineShapes(X).Type = wdInlineShapePicture Then
+    '        Set myShp = ActiveDocument.InlineShapes(X)
+    '        TestNames = pictureNames & sep_objects & myShp.PictureFormat 
+    '        'vbCrLf
+    '    End If 
+    'Next X  
+    'test with Inlines 
+    ' doc for types : https://learn.microsoft.com/en-us/office/vba/api/word.wdinlineshapetype
+    
+    'For X = 1 To ActiveDocument.InlineShapes.Count
+    '    If ActiveDocument.InlineShapes(X).Type = wdInlineShapePicture Then
+    '        Set myShp = ActiveDocument.InlineShapes(X)
+    '        StriShp = StriShp & sep_inside & myShp.AlternativeText
+    '        TestNames = TestNames & sep_objects & myShp.AlternativeText & sep_inside & myShp.Title 
+    '        'vbCrLf
+    '    End If
+    'Next X   
+    TestNames = TestNames & vbCrLf & vbCrLf & " Inline Pictures" & "================" & vbCrLf & " Alternative Texts : "
+    ' AlternativeText seems to be no use
+    For X = 1 To ActiveDocument.InlineShapes.Count
+        If ActiveDocument.InlineShapes(X).Type = wdInlineShapePicture Then
+            Set myShp = ActiveDocument.InlineShapes(X)
+            TestNames = TestNames & sep_objects & "picture" & Str(X) & " " & myShp.AlternativeText  
+            'vbCrLf
+        End If
+    Next X   
+    TestNames = TestNames & vbCrLf & " Titles : "
+    For X = 1 To ActiveDocument.InlineShapes.Count
+        If ActiveDocument.InlineShapes(X).Type = wdInlineShapePicture Then
+            Set myShp = ActiveDocument.InlineShapes(X)
+            TestNames = TestNames & sep_objects &  "picture" & Str(X) & " " & myShp.Title 
+            'vbCrLf
+        End If 
+    Next X   
+    TestNames = TestNames & vbCrLf & " LockAspectRatio : "
+    For X = 1 To ActiveDocument.InlineShapes.Count
+        If ActiveDocument.InlineShapes(X).Type = wdInlineShapePicture Then
+            Set myShp = ActiveDocument.InlineShapes(X)
+            If myShp.LockAspectRatio = MsoTrue Then
+                TestNames = TestNames & sep_objects &  "picture" & Str(X) & " " & "LockAspectRatio True"
+            Else 
+                TestNames = TestNames & sep_objects & "LockAspectRatio False"
+            End If
+
+            'vbCrLf
+        End If 
+    Next X   
+
+  TestPictures = TestNames
+End Function""")
     macros.append("""
 Function GetAllPicturesName() As String
     Dim Shp As Shape, iShp As InlineShape
@@ -448,8 +553,13 @@ End Function""")
 def print_debug(debug, message):
     if debug:
         print(message)
-
-
+def test_pictures_names(word_app, debug):
+    image_names = ""
+    try:
+        image_names = word_app.Run("TestPictures")
+    except Exception as e:
+        sys.stderr.write("error in word_macros.py\test_pictures_names " + str(e))
+    return image_names
 def get_pictures_names(word_app, debug):
     image_names = ""
     try:
@@ -865,7 +975,8 @@ if __name__ == "__main__":
     file_name = file_name_begin + "Test-8.docx"
     file_name = file_name_begin + "Test-9.docx"
     #file_name = file_name_begin + "Test-10.docx"
-    #file_name = "2024-01-S2-Arens-Hélène-traitement-de-texte.docx"
+    file_name = "Test-Image-1.docx" # simple word file with only text and 3 images : 1 simple inline,
+                                    # 1 simple inlide with legend, 1 with text on the left
 
     from student import Student
     stud = Student()
@@ -928,13 +1039,15 @@ if __name__ == "__main__":
     #print("group found : ", group)
     #check_tables(word_app, stud, key="tableau", debug=debug)
     #check_quote(word_app, stud, key="citation", debug=debug)
-    #TODO check_image(word_app, stud, key="images", debug=debugging)
+    #TODO
+    #check_image(word_app, stud, key="images", debug=debugging)
     #check_legend(word_app, stud, key="images", debug=debugging)
-    pictures = get_pictures_names(word_app, debug=debugging)
-    list_pictures = pictures.split('##')
-    print_debug(debugging,  "pictures : "+ pictures)
-    for el in list_pictures:
-        print(el)
-    print_debug(debugging, str(len(list_pictures)))
+    #pictures = get_pictures_names(word_app, debug=debugging)
+    pictures = test_pictures_names(word_app, debugging)
+    #list_pictures = pictures.split('##')
+    print_debug(debugging,  "pictures : "+ str(pictures))
+    #for el in list_pictures:
+    #    print(el)
+    #print_debug(debugging, str(len(list_pictures)))
     document.Close(True)
     word_app.Quit(SaveChanges=0)

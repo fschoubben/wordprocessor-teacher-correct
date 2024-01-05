@@ -58,7 +58,6 @@ def execute_ensuring_file_not_open(file, command):
                                     message="Fermer le document Excel pour la nouvelle correction")
         else:
             command(file)
-    # workbook.save(excel_file_for_results)
 
 
 def fill_first_lines_excel(worksheet, student):
