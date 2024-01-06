@@ -23,6 +23,7 @@ def define_macros():
     macros.append("""
 Function TestPictures() As String
     'shapeRange Type doc : https://learn.microsoft.com/en-us/office/vba/api/powerpoint.shaperange.type
+    'Inline Type doc : https://learn.microsoft.com/en-us/office/vba/api/word.wdinlineshapetype
     Dim Shp As Shape, iShp As InlineShape
     Dim IShapeRange As Range
     Dim StrShp As String, StriShp As String
@@ -36,36 +37,69 @@ Function TestPictures() As String
     '        Shp.ConvertToInlineShape
     '    End If 
     'Next
-    TestNames = Str(ActiveDocument.Shapes.Count) & " Shapes found" & vbCrLf & " Alternative Texts : "
-    ' AlternativeText is no use
-    For X = 1 To ActiveDocument.Shapes.Count
-        If ActiveDocument.Shapes(X).Type = msoPicture Then
-            Set myShp = ActiveDocument.Shapes(X)
-            TestNames = TestNames & sep_objects & "picture" & Str(X) & " " & myShp.AlternativeText  
-            'vbCrLf
-        End If
-    Next X   
-    TestNames = TestNames & vbCrLf & " Titles : "
-    For X = 1 To ActiveDocument.Shapes.Count
-        If ActiveDocument.Shapes(X).Type = msoPicture Then
-            Set myShp = ActiveDocument.Shapes(X)
-            TestNames = TestNames & sep_objects &  "picture" & Str(X) & " " & myShp.Title 
-            'vbCrLf
-        End If 
-    Next X   
-    TestNames = TestNames & vbCrLf & " LockAspectRatio : "
-    For X = 1 To ActiveDocument.Shapes.Count
-        If ActiveDocument.Shapes(X).Type = msoPicture Then
-            Set myShp = ActiveDocument.Shapes(X)
-            If myShp.LockAspectRatio = MsoTrue Then
-                TestNames = TestNames & sep_objects &  "picture" & Str(X) & " " & "LockAspectRatio True"
-            Else 
-                TestNames = TestNames & sep_objects & "LockAspectRatio False"
+    TestNames = Str(ActiveDocument.Shapes.Count) & " Shapes found" & vbCrLf & " SourceFullName : "
+    With ActiveDocument.Range
+        For Each Shp In .ShapeRange
+            'With Shp
+              If Shp.Type = msoLinkedPicture Then
+                ' TestName = TestName & sep_objects & Split(.LinkFormat.SourceName, ".")(0)
+                If Shp.LinkFormat.SavePictureWithDocument = True Then
+                    TestName = TestName & sep_objects & "picture saved in document"
+                End If
+              End If
+            'End With
+        Next
+        For Each iShp in  .InlineShapes
+            If iShp.Type = wdInlineShapePicture Then
+                If iShp.LinkFormat.SavePictureWithDocument = True Then
+                    TestName = TestName & sep_objects & "inline picture saved in document"
+                Else
+                    TestName = TestName & sep_objects & "inline picture not saved in document"
+                End If
             End If
+        Next
+            
+             
+    '           Set myShp = ActiveDocument.InlineShapes(X)
+    '    If ActiveDocument.InlineShapes(X).Type = wdInlineShapePicture Then
+    '        Set myShp = ActiveDocument.InlineShapes(X)
+    '        TestNames = pictureNames & sep_objects & myShp.PictureFormat 
+    '        'vbCrLf
+    '    End If 
+    'Next X 
+    End With
+    ' ----------------------------------------------------------------------------------------------
+    ' AlternativeText, Titles, LockAspectRatio, PictureFormat neither in Shapes nor in InlineShapes
+    ' ----------------------------------------------------------------------------------------------
+    ' AlternativeText is no use
+    'For X = 1 To ActiveDocument.Shapes.Count
+    '    If ActiveDocument.Shapes(X).Type = msoPicture Then
+    '        Set myShp = ActiveDocument.Shapes(X)
+    '        TestNames = TestNames & sep_objects & "picture" & Str(X) & " " & myShp.AlternativeText  
+    '        'vbCrLf
+    '    End If
+    'Next X   
+    'TestNames = TestNames & vbCrLf & " Titles : "
+    'For X = 1 To ActiveDocument.Shapes.Count
+    '    If ActiveDocument.Shapes(X).Type = msoPicture Then
+    '        Set myShp = ActiveDocument.Shapes(X)
+    '        TestNames = TestNames & sep_objects &  "picture" & Str(X) & " " & myShp.Title 
+    '        'vbCrLf
+    '    End If 
+    'Next X   
+    'TestNames = TestNames & vbCrLf & " LockAspectRatio : "
+    'For X = 1 To ActiveDocument.Shapes.Count
+    '    If ActiveDocument.Shapes(X).Type = msoPicture Then
+    '        Set myShp = ActiveDocument.Shapes(X)
+    '        If myShp.LockAspectRatio = MsoTrue Then
+    '            TestNames = TestNames & sep_objects &  "picture" & Str(X) & " " & "LockAspectRatio True"
+    '        Else 
+    '            TestNames = TestNames & sep_objects & "LockAspectRatio False"
+    '        End If
 
-            'vbCrLf
-        End If 
-    Next X   
+    '        'vbCrLf
+    '    End If 
+    'Next X   
     'TestName = TestName & vbCrLf & " PictureFormat : "
     'For X = 1 To ActiveDocument.InlineShapes.Count
     '    If ActiveDocument.InlineShapes(X).Type = wdInlineShapePicture Then
@@ -93,36 +127,36 @@ Function TestPictures() As String
     '        'vbCrLf
     '    End If
     'Next X   
-    TestNames = TestNames & vbCrLf & vbCrLf & " Inline Pictures" & "================" & vbCrLf & " Alternative Texts : "
+    'TestNames = TestNames & vbCrLf & vbCrLf & " Inline Pictures" & "================" & vbCrLf & " Alternative Texts : "
     ' AlternativeText seems to be no use
-    For X = 1 To ActiveDocument.InlineShapes.Count
-        If ActiveDocument.InlineShapes(X).Type = wdInlineShapePicture Then
-            Set myShp = ActiveDocument.InlineShapes(X)
-            TestNames = TestNames & sep_objects & "picture" & Str(X) & " " & myShp.AlternativeText  
-            'vbCrLf
-        End If
-    Next X   
-    TestNames = TestNames & vbCrLf & " Titles : "
-    For X = 1 To ActiveDocument.InlineShapes.Count
-        If ActiveDocument.InlineShapes(X).Type = wdInlineShapePicture Then
-            Set myShp = ActiveDocument.InlineShapes(X)
-            TestNames = TestNames & sep_objects &  "picture" & Str(X) & " " & myShp.Title 
-            'vbCrLf
-        End If 
-    Next X   
-    TestNames = TestNames & vbCrLf & " LockAspectRatio : "
-    For X = 1 To ActiveDocument.InlineShapes.Count
-        If ActiveDocument.InlineShapes(X).Type = wdInlineShapePicture Then
-            Set myShp = ActiveDocument.InlineShapes(X)
-            If myShp.LockAspectRatio = MsoTrue Then
-                TestNames = TestNames & sep_objects &  "picture" & Str(X) & " " & "LockAspectRatio True"
-            Else 
-                TestNames = TestNames & sep_objects & "LockAspectRatio False"
-            End If
-
-            'vbCrLf
-        End If 
-    Next X   
+    'For X = 1 To ActiveDocument.InlineShapes.Count
+    '    If ActiveDocument.InlineShapes(X).Type = wdInlineShapePicture Then
+    '        Set myShp = ActiveDocument.InlineShapes(X)
+    '        TestNames = TestNames & sep_objects & "picture" & Str(X) & " " & myShp.AlternativeText  
+    '        'vbCrLf
+    '    End If
+    'Next X   
+    'TestNames = TestNames & vbCrLf & " Titles : "
+    'For X = 1 To ActiveDocument.InlineShapes.Count
+    '    If ActiveDocument.InlineShapes(X).Type = wdInlineShapePicture Then
+    '        Set myShp = ActiveDocument.InlineShapes(X)
+    '        TestNames = TestNames & sep_objects &  "picture" & Str(X) & " " & myShp.Title 
+    '        'vbCrLf
+    '    End If 
+    'Next X   
+    'TestNames = TestNames & vbCrLf & " LockAspectRatio : "
+    'For X = 1 To ActiveDocument.InlineShapes.Count
+    '    If ActiveDocument.InlineShapes(X).Type = wdInlineShapePicture Then
+    '        Set myShp = ActiveDocument.InlineShapes(X)
+    '        If myShp.LockAspectRatio = MsoTrue Then
+    '            TestNames = TestNames & sep_objects &  "picture" & Str(X) & " " & "LockAspectRatio True"
+    '        Else 
+    '            TestNames = TestNames & sep_objects & "LockAspectRatio False"
+    '        End If
+    '
+    '        'vbCrLf
+    '    End If 
+    'Next X   
 
   TestPictures = TestNames
 End Function""")
@@ -1043,9 +1077,9 @@ if __name__ == "__main__":
     #check_image(word_app, stud, key="images", debug=debugging)
     #check_legend(word_app, stud, key="images", debug=debugging)
     #pictures = get_pictures_names(word_app, debug=debugging)
-    pictures = test_pictures_names(word_app, debugging)
+    # pictures = test_pictures_names(word_app, debugging)
     #list_pictures = pictures.split('##')
-    print_debug(debugging,  "pictures : "+ str(pictures))
+    # print_debug(debugging,  "pictures : "+ str(pictures))
     #for el in list_pictures:
     #    print(el)
     #print_debug(debugging, str(len(list_pictures)))
